@@ -4,96 +4,82 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <cstdlib>
-#include <cstdio>
-#include <cstring>
+#include <filesystem>
 #include <ctime>
 
 #include "../models/structs.h"
 
 namespace CommandRmdisk {
 
-    /*
-        Expandir rutas que contienen ~
-    */
+    // Expandir rutas con ~
     inline std::string expandPath(const std::string& path) {
-
-        if (path.empty() || path[0] != '~')
-            return path;
-
+        if (path.empty() || path[0] != '~') return path;
         const char* home = std::getenv("HOME");
-
-        if (!home)
-            return path;
-
+        if (!home) return path;
         return std::string(home) + path.substr(1);
-
     }
 
-    /*
-        Comando rmdisk
-        Elimina un disco virtual
-    */
-    inline std::string execute(const std::string& path) {
+    // Obtener parametro (igual que mkdisk)
+    inline std::string getParam(const std::string& line, const std::string& key) {
 
-        if (path.empty())
-            return "Error: falta parametro -path";
+        size_t pos = line.find(key + "=");
+        if (pos == std::string::npos) return "";
 
-        std::string expandedPath = expandPath(path);
+        pos += key.length() + 1;
 
-        /*
-            Verificar que el disco exista
-        */
-        std::ifstream check(expandedPath);
+        if (line[pos] == '"') {
+            size_t end = line.find('"', pos + 1);
+            return line.substr(pos + 1, end - pos - 1);
+        }
 
-        if (!check.good())
+        size_t end = line.find(" ", pos);
+        return line.substr(pos, end - pos);
+    }
+
+    // Ejecutar rmdisk
+    inline std::string removeDisk(const std::string& path) {
+
+        std::string realPath = expandPath(path);
+
+        // Validar extension
+        if (realPath.length() < 4 || realPath.substr(realPath.length() - 4) != ".mia") {
+            return "Error: El disco debe tener extensión .mia";
+        }
+
+        // Verificar existencia
+        if (!std::filesystem::exists(realPath)) {
             return "Error: el disco no existe";
+        }
 
-        check.close();
-
-        /*
-            Leer MBR antes de eliminar
-        */
-        std::ifstream file(expandedPath, std::ios::binary);
+        // Leer MBR antes de eliminar
+        std::ifstream file(realPath, std::ios::binary);
 
         if (!file.is_open())
             return "Error: no se pudo abrir el disco";
 
         MBR mbr;
-
         file.read(reinterpret_cast<char*>(&mbr), sizeof(MBR));
-
         file.close();
 
-        /*
-            Formatear fecha
-        */
-        char fecha[100];
-
-        strftime(
-            fecha,
-            sizeof(fecha),
-            "%d/%m/%Y %H:%M",
-            localtime(&mbr.mbr_fecha_creacion)
-        );
-
-        /*
-            Eliminar archivo
-        */
-        if (remove(expandedPath.c_str()) != 0)
+        // Eliminar archivo
+        if (!std::filesystem::remove(realPath))
             return "Error: no se pudo eliminar el disco";
 
-        std::ostringstream result;
+        return "Disco eliminado correctamente\nRuta: " + realPath;
+    }
 
-        result << "\n=== RMDISK ===\n";
-        result << "Disco eliminado correctamente\n";
-        result << "  Ruta: " << expandedPath << "\n";
-        result << "  Tamaño: " << mbr.mbr_tamano << " bytes\n";
-        result << "  Fecha creación: " << fecha << "\n";
-        result << "  Firma: " << mbr.mbr_dsk_signature;
+    // Ejecutar comando completo
+    
+    inline std::string execute(const std::string& line) {
 
-        return result.str();
+        std::string path = getParam(line, "-path");
 
+        if (path.empty())
+            return "Error: falta parametro -path";
+
+        return removeDisk(path);
     }
 
 }

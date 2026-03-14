@@ -1,0 +1,230 @@
+# ============================================================
+# Script de Calificacion - Proyecto 1 MIA
+# Usuario: angel | Carnet: ...56
+# ============================================================
+
+# ─── 1. MKDISK ───────────────────────────────────────────────
+
+# ERROR: parametro invalido
+mkdisk -param=x -size=30 -path=/home/angel/Calificacion_MIA/Discos/DiscoN.mia
+
+# ERROR: parametro -tamaño no existe
+mkdisk -tamaño=3000 -unit=K -path=/home/angel/Calificacion_MIA/Discos/DiscoN.mia
+
+# Disco 1 - 50M - FF
+mkdisk -size=50 -unit=M -fit=FF -path=/home/angel/Calificacion_MIA/Discos/Disco1.mia
+
+# Disco 2 - 50M - BF
+mkdisk -unit=K -size=51200 -fit=BF -path=/home/angel/Calificacion_MIA/Discos/Disco2.mia
+
+# Disco 3 - 13M (sin fit, default FF)
+mkdisk -size=13 -path=/home/angel/Calificacion_MIA/Discos/Disco3.mia
+
+# Disco 4 - 50M
+mkdisk -size=51200 -unit=K -path=/home/angel/Calificacion_MIA/Discos/Disco4.mia
+
+# Disco 5 - 20M - WF
+mkdisk -size=20 -unit=M -fit=WF -path=/home/angel/Calificacion_MIA/Discos/Disco5.mia
+
+# ─── 2. RMDISK ───────────────────────────────────────────────
+
+# ERROR: disco no existe
+rmdisk -path=/home/angel/Calificacion_MIA/Discos/DiscoN.mia
+
+# Eliminar Disco 4 y 5 (no se usan)
+rmdisk -path=/home/angel/Calificacion_MIA/Discos/Disco4.mia
+rmdisk -path=/home/angel/Calificacion_MIA/Discos/Disco5.mia
+
+# ─── 3. FDISK ────────────────────────────────────────────────
+
+# ERROR: ruta no encontrada
+fdisk -type=P -unit=B -name=PartErr -size=10485760 -path=/home/angel/Calificacion_MIA/Discos/DiscoN.mia -fit=BF
+
+# DISCO 1 - 4 primarias de 10M cada una
+fdisk -type=P -unit=B -name=Part11 -size=10485760 -path=/home/angel/Calificacion_MIA/Discos/Disco1.mia -fit=BF
+fdisk -type=P -unit=K -name=Part12 -size=10240    -path=/home/angel/Calificacion_MIA/Discos/Disco1.mia -fit=BF
+fdisk -type=P -unit=M -name=Part13 -size=10        -path=/home/angel/Calificacion_MIA/Discos/Disco1.mia -fit=BF
+fdisk -type=P -unit=B -name=Part14 -size=10485760 -path=/home/angel/Calificacion_MIA/Discos/Disco1.mia -fit=BF
+
+# ERROR: limite de 4 particiones primarias
+fdisk -type=P -unit=B -name=PartErr -size=10485760 -path=/home/angel/Calificacion_MIA/Discos/Disco1.mia -fit=BF
+
+# DISCO 2 - 1 extendida + 3 logicas
+fdisk -type=E -unit=M -name=Part21 -size=40 -path=/home/angel/Calificacion_MIA/Discos/Disco2.mia -fit=FF
+fdisk -type=L -unit=M -name=Part21L1 -size=10 -path=/home/angel/Calificacion_MIA/Discos/Disco2.mia -fit=FF
+fdisk -type=L -unit=M -name=Part21L2 -size=10 -path=/home/angel/Calificacion_MIA/Discos/Disco2.mia -fit=FF
+fdisk -type=L -unit=M -name=Part21L3 -size=10 -path=/home/angel/Calificacion_MIA/Discos/Disco2.mia -fit=FF
+
+# DISCO 3 - 3 primarias
+fdisk -type=P -unit=M -name=Part31 -size=4 -path=/home/angel/Calificacion_MIA/Discos/Disco3.mia
+fdisk -type=P -unit=M -name=Part32 -size=4 -path=/home/angel/Calificacion_MIA/Discos/Disco3.mia
+fdisk -type=P -unit=M -name=Part33 -size=1 -path=/home/angel/Calificacion_MIA/Discos/Disco3.mia
+
+# ERROR: sin espacio (solo quedan 4M libres en disco 3)
+fdisk -type=P -unit=M -name=PartErr -size=20 -path=/home/angel/Calificacion_MIA/Discos/Disco3.mia
+
+# ─── 4. MOUNT ────────────────────────────────────────────────
+
+# DISCO 1
+mount -path=/home/angel/Calificacion_MIA/Discos/Disco1.mia -name=Part11
+mount -path=/home/angel/Calificacion_MIA/Discos/Disco1.mia -name=Part12
+
+# ERROR: ya montada
+mount -path=/home/angel/Calificacion_MIA/Discos/Disco1.mia -name=Part11
+
+# DISCO 2
+mount -path=/home/angel/Calificacion_MIA/Discos/Disco2.mia -name=Part21L1
+
+# DISCO 3
+# ERROR: particion no existe
+mount -path=/home/angel/Calificacion_MIA/Discos/Disco3.mia -name=Part0
+mount -path=/home/angel/Calificacion_MIA/Discos/Disco3.mia -name=Part31
+mount -path=/home/angel/Calificacion_MIA/Discos/Disco3.mia -name=Part32
+
+# Listar particiones montadas
+# Esperado: 561A, 562A, 561B, 561C, 562C
+mounted
+
+# ─── REPORTES PARTE 1 ─────────────────────────────────────────
+
+# ERROR: id no encontrado
+rep -id=A561 -path=/home/angel/Calificacion_MIA/Reportes/p1_rE.jpg -name=mbr
+
+# DISCO 1
+rep -id=561A -path=/home/angel/Calificacion_MIA/Reportes/p1_r1_disk.jpg -name=disk
+rep -id=561A -path=/home/angel/Calificacion_MIA/Reportes/p1_r2_mbr.jpg  -name=mbr
+
+# DISCO 3
+# ERROR: id no existe
+rep -id=563C -path=/home/angel/Calificacion_MIA/Reportes/p1_rE_mbr.jpg -name=mbr
+rep -id=561C -path=/home/angel/Calificacion_MIA/Reportes/p1_r3_disk.jpg -name=disk
+rep -id=562C -path=/home/angel/Calificacion_MIA/Reportes/p1_r4_mbr.jpg  -name=mbr
+
+# ─── 5. MKFS ─────────────────────────────────────────────────
+
+mkfs -type=full -id=561A
+
+# ─── 7. LOGIN ────────────────────────────────────────────────
+
+login -user=root -pass=123 -id=561A
+
+# ERROR: sesion ya iniciada
+login -user=root -pass=123 -id=561A
+
+# ─── 9. MKGRP ────────────────────────────────────────────────
+
+mkgrp -name=usuarios
+mkgrp -name=adm
+mkgrp -name=mail
+mkgrp -name=news
+mkgrp -name=sys
+
+# ERROR: grupo ya existe
+mkgrp -name=sys
+
+# ─── CAT ─────────────────────────────────────────────────────
+cat -file1=/users.txt
+
+# ─── 10. RMGRP ───────────────────────────────────────────────
+
+rmgrp -name=mail
+
+# ERROR: grupo no existe
+rmgrp -name=noexiste
+
+cat -file1=/users.txt
+
+# ─── 11. MKUSR ───────────────────────────────────────────────
+
+mkusr -user=usuario1 -pass=password -grp=root
+mkusr -user=user1    -pass=abc      -grp=usuarios
+mkusr -user=user2    -pass=abc      -grp=usuarios
+
+# ERROR: usuario ya existe
+mkusr -user=user2 -pass=abc -grp=usuarios
+
+# ERROR: grupo no existe
+mkusr -user=user3 -pass=abc -grp=system
+
+cat -file1=/users.txt
+
+# ─── 13. CHGRP ───────────────────────────────────────────────
+
+chgrp -user=user2 -grp=adm
+
+cat -file1=/users.txt
+
+# ─── 12. RMUSR ───────────────────────────────────────────────
+
+rmusr -user=user2
+
+# ERROR: usuario no existe
+rmusr -user=noexiste
+
+cat -file1=/users.txt
+
+# ─── 15. MKDIR ───────────────────────────────────────────────
+
+mkdir -path=/bin
+
+# ERROR: carpetas padres no existen (sin -p)
+mkdir -path=/home/archivos/sin_p/docs
+
+# Crear árbol de carpetas con -p
+mkdir -p -path=/home/archivos/user/docs/usac
+mkdir -p -path=/home/archivos/carpeta1/carpeta2/carpeta3/carpeta4/carpeta5
+
+# ─── 8. LOGOUT ───────────────────────────────────────────────
+
+logout
+
+# ERROR: no hay sesion activa
+logout
+
+# ─── LOGIN CON USUARIO CREADO ────────────────────────────────
+
+login -user=user1 -pass=abc -id=561A
+logout
+
+# Regresamos a root
+login -user=root -pass=123 -id=561A
+
+# ─── 14. MKFILE ──────────────────────────────────────────────
+
+# Archivo de 75 bytes (2 bloques)
+mkfile -path=/home/archivos/user/docs/Tarea.txt -size=75
+
+# Archivo de 768 bytes (12 bloques, exacto limite directo)
+mkfile -path=/home/archivos/user/docs/Tarea2.txt -size=768
+
+# Archivo con contenido desde archivo del host
+mkfile -path=/home/archivos/user/docs/Tarea3.txt -size=10 -cont=/home/angel/Calificacion_MIA/CONT/NAME.txt
+
+# ERROR: ruta padre no existe (sin -r)
+mkfile -path=/home/archivos/noexiste/b1.txt
+
+# ERROR: size negativo
+mkfile -path=/home/archivos/b1.txt -size=-45
+
+# Recursivo: crea carpetas y archivo
+mkfile -r -path=/home/archivos/user/docs/usac/archivos/proyectos/fase1/entrada.txt
+
+# ─── CAT ─────────────────────────────────────────────────────
+
+cat -file1=/home/archivos/user/docs/Tarea2.txt
+cat -file1=/home/archivos/user/docs/Tarea3.txt
+
+# ─── REPORTES PARTE 4 ────────────────────────────────────────
+
+rep -id=561A -path=/home/angel/Calificacion_MIA/Reportes/p4_r1_inode.jpg   -name=inode
+rep -id=561A -path=/home/angel/Calificacion_MIA/Reportes/p4_r2_block.jpg   -name=block
+rep -id=561A -path=/home/angel/Calificacion_MIA/Reportes/p4_r3_bm_inode.txt -name=bm_inode
+rep -id=561A -path=/home/angel/Calificacion_MIA/Reportes/p4_r4_bm_block.txt -name=bm_block
+rep -id=561A -path=/home/angel/Calificacion_MIA/Reportes/p4_r5_sb.jpg       -name=sb
+rep -id=561A -path=/home/angel/Calificacion_MIA/Reportes/p4_r6_file.jpg     -name=file  -ruta=/home/archivos/user/docs/Tarea2.txt
+rep -id=561A -path=/home/angel/Calificacion_MIA/Reportes/p4_r7_ls.jpg       -name=ls    -ruta=/home/archivos/user/docs
+rep -id=561A -path=/home/angel/Calificacion_MIA/Reportes/p4_r8_tree.png     -name=tree
+
+# ─── LOGOUT FINAL ────────────────────────────────────────────
+
+logout

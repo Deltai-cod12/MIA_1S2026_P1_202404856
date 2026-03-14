@@ -3,7 +3,7 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**",
+                "${workspaceFolder}*",
                 "${workspaceFolder}/backend/src/commands",
                 "${workspaceFolder}/backend/src/models",
                 "/usr/include/jack"

@@ -12,6 +12,7 @@
 #include <cstdlib>
 
 #include "../models/structs.h"
+#include "../models/mounted_partitions.h"
 
 namespace CommandMount {
 
@@ -256,6 +257,15 @@ namespace CommandMount {
         mounted.size = size;
 
         mountedPartitions[mountID] = mounted;
+
+        ::MountedPartition globalMount;
+
+        globalMount.id = mountID;
+        globalMount.path = path;
+        globalMount.name = name;
+        globalMount.start = start;
+
+        ::mountedPartitions.push_back(globalMount);
 
         std::ostringstream result;
 
