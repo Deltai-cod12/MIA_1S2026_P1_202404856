@@ -269,9 +269,9 @@ inline std::string execute(const std::string& id, const std::string& type){
     return result.str();
 }
 
-/*
-    Parser del comando mkfs desde una linea completa
-*/
+
+    // Parser del comando mkfs desde una linea completa
+
 inline std::string executeFromLine(const std::string& commandLine){
 
     std::istringstream iss(commandLine);

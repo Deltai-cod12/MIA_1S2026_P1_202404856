@@ -65,7 +65,7 @@ struct EBR {
     }
 };
 
-// ── ESTRUCTURAS DEL SISTEMA DE ARCHIVOS ──────────────────────────────────────
+// ESTRUCTURAS DEL SISTEMA DE ARCHIVOS 
 
 // SUPERBLOQUE
 struct Superblock {
@@ -130,7 +130,7 @@ struct Inode {
         for (int i = 0; i < 15; i++)
             i_block[i] = -1;
         i_type = '0';
-        memcpy(i_perm, "664", 3);  // ← correcto: copia 3 chars sin null terminator
+        memcpy(i_perm, "664", 3);  //  correcto: copia 3 chars sin null terminator
     }
 };
 
@@ -145,13 +145,13 @@ struct Content {
     }
 };
 
-// BLOQUE DE CARPETA — 4 entradas × 16 bytes = 64 bytes ✅
+// BLOQUE DE CARPETA — 4 entradas × 16 bytes = 64 bytes 
 struct FolderBlock {
     Content b_content[4];
     FolderBlock() {}
 };
 
-// BLOQUE DE ARCHIVO — 64 bytes ✅
+// BLOQUE DE ARCHIVO — 64 bytes 
 struct FileBlock {
     char b_content[64];
     FileBlock() {
@@ -159,7 +159,7 @@ struct FileBlock {
     }
 };
 
-// BLOQUE DE APUNTADORES — 16 × 4 bytes = 64 bytes ✅
+// BLOQUE DE APUNTADORES — 16 × 4 bytes = 64 bytes 
 struct PointerBlock {
     int b_pointers[16];
     PointerBlock() {

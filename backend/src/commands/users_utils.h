@@ -1,11 +1,11 @@
 #ifndef USERS_UTILS_H
 #define USERS_UTILS_H
 
-/*
-    Helper compartido para leer y escribir users.txt en el disco.
-    Soporta contenido que ocupa múltiples bloques (directos + indirectos).
-    Usado por: mkgrp, rmgrp, mkusr, rmusr, chgrp, login.
-*/
+
+   // Helper compartido para leer y escribir users.txt en el disco.
+   // Soporta contenido que ocupa múltiples bloques (directos + indirectos).
+   // Usado por: mkgrp, rmgrp, mkusr, rmusr, chgrp, login.
+
 
 #include <fstream>
 #include <string>
@@ -15,10 +15,10 @@
 
 namespace UsersUtils {
 
-/*
-    Lee el contenido completo de users.txt (inodo 1) desde el disco.
-    Soporta bloques directos [0..11] e indirecto simple [12].
-*/
+
+  //  Lee el contenido completo de users.txt (inodo 1) desde el disco.
+  //  Soporta bloques directos [0..11] e indirecto simple [12].
+
 inline std::string readUsersFile(std::fstream& file, Superblock& sb) {
 
     // Inodo 1 = users.txt (siempre)
@@ -64,9 +64,9 @@ inline std::string readUsersFile(std::fstream& file, Superblock& sb) {
     return content;
 }
 
-/*
-    Busca el siguiente bloque libre en el bitmap.
-*/
+
+   // Busca el siguiente bloque libre en el bitmap.
+
 inline int findFreeBlock(std::fstream& file, Superblock& sb) {
     file.seekg(sb.s_bm_block_start);
     for (int i = 0; i < sb.s_blocks_count; i++) {
@@ -76,11 +76,11 @@ inline int findFreeBlock(std::fstream& file, Superblock& sb) {
     return -1;
 }
 
-/*
-    Escribe el contenido de users.txt de vuelta al disco.
-    Reutiliza bloques ya asignados y asigna nuevos si el contenido creció.
-    Actualiza el inodo (i_size) y el superbloque (free counts).
-*/
+
+   // Escribe el contenido de users.txt de vuelta al disco.
+   // Reutiliza bloques ya asignados y asigna nuevos si el contenido creció.
+   // Actualiza el inodo (i_size) y el superbloque (free counts).
+
 inline bool writeUsersFile(std::fstream& file, Superblock& sb, int partStart,
                             const std::string& content) {
 
@@ -97,7 +97,7 @@ inline bool writeUsersFile(std::fstream& file, Superblock& sb, int partStart,
 
         int chunkSize = std::min(64, totalBytes - written);
 
-        // ── Bloque directo [0..11] ────────────────────────────────────────────
+        //  Bloque directo [0..11] 
         if (blockNum < 12) {
 
             if (inode.i_block[blockNum] == -1) {
@@ -121,7 +121,7 @@ inline bool writeUsersFile(std::fstream& file, Superblock& sb, int partStart,
             file.write((char*)&fb, sizeof(FileBlock));
 
         }
-        // ── Indirecto simple [12] ─────────────────────────────────────────────
+        //  Indirecto simple [12] 
         else if (blockNum < 12 + 16) {
 
             // Crear bloque de punteros si no existe

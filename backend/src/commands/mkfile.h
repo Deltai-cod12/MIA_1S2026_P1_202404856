@@ -22,13 +22,13 @@ inline std::string toLowerCase(std::string str) {
     return str;
 }
 
-// ─── Escritura de contenido con apuntadores indirectos ────────────────────────
+//  Escritura de contenido con apuntadores indirectos 
 
-/*
-    Escribe `data` en bloques de 64 bytes a partir del inodo dado.
-    Usa bloques directos [0..11], un nivel indirecto [12] y doble indirecto [13].
-    Retorna false si se queda sin espacio.
-*/
+
+    // Escribe `data` en bloques de 64 bytes a partir del inodo dado.
+    // Usa bloques directos [0..11], un nivel indirecto [12] y doble indirecto [13].
+    // Retorna false si se queda sin espacio.
+
 inline bool writeFileContent(std::fstream& file, Superblock& sb,
                               Inode& inode, const std::string& data) {
     int totalChars = (int)data.size();
@@ -37,11 +37,11 @@ inline bool writeFileContent(std::fstream& file, Superblock& sb,
 
     while (written < totalChars) {
 
-        // ── Obtener bloque libre ───────────────────────────────────────────────
+        //  Obtener bloque libre 
         int freeBlock = CommandMkdir::findFreeBlock(file, sb);
         if (freeBlock == -1) return false;
 
-        // ── Escribir chunk de 64 bytes ────────────────────────────────────────
+        //  Escribir chunk de 64 bytes 
         FileBlock fb;
         int chunkSize = std::min(64, totalChars - written);
         memset(fb.b_content, 0, 64);
@@ -56,7 +56,7 @@ inline bool writeFileContent(std::fstream& file, Superblock& sb,
         file.write(&used, 1);
         sb.s_free_blocks_count--;
 
-        // ── Asignar bloque al inodo ───────────────────────────────────────────
+        //  Asignar bloque al inodo 
 
         if (blockNum < 12) {
             // Bloques directos [0..11]
@@ -155,7 +155,7 @@ inline bool writeFileContent(std::fstream& file, Superblock& sb,
     return true;
 }
 
-// ─── Comando principal ────────────────────────────────────────────────────────
+//  Comando principal 
 
 inline std::string execute(
     const std::string& path,
@@ -181,7 +181,7 @@ inline std::string execute(
     file.seekg(partition.start);
     file.read((char*)&sb, sizeof(Superblock));
 
-    // ── Navegar/crear directorio padre ────────────────────────────────────────
+    //  Navegar/crear directorio padre 
     std::vector<std::string> parts = CommandMkdir::splitPath(path);
     if (parts.empty()) {
         file.close();
@@ -220,7 +220,7 @@ inline std::string execute(
         return "Error: el archivo '" + fileName + "' ya existe";
     }
 
-    // ── Preparar contenido ────────────────────────────────────────────────────
+    // ── Preparar contenido 
     std::string data;
 
     if (!cont.empty()) {
@@ -244,7 +244,7 @@ inline std::string execute(
         }
     }
 
-    // ── Crear inodo del archivo ───────────────────────────────────────────────
+    //  Crear inodo del archivo 
     int newInodeIndex = CommandMkdir::findFreeInode(file, sb);
     if (newInodeIndex == -1) {
         file.close();
@@ -265,7 +265,7 @@ inline std::string execute(
     file.write(&used, 1);
     sb.s_free_inodes_count--;
 
-    // ── Escribir bloques de contenido ─────────────────────────────────────────
+    //  Escribir bloques de contenido 
     if (!data.empty()) {
         if (!writeFileContent(file, sb, newInode, data)) {
             file.close();
@@ -273,16 +273,16 @@ inline std::string execute(
         }
     }
 
-    // ── Escribir inodo (con i_block[] ya rellenados) ──────────────────────────
+    //  Escribir inodo (con i_block[] ya rellenados) 
     CommandMkdir::writeInode(file, sb, newInodeIndex, newInode);
 
-    // ── Vincular archivo al directorio padre ──────────────────────────────────
+    //  Vincular archivo al directorio padre 
     if (!CommandMkdir::addEntryToDir(file, sb, parentInodeIndex, fileName, newInodeIndex)) {
         file.close();
         return "Error: no hay espacio en el directorio padre";
     }
 
-    // ── Guardar superbloque ───────────────────────────────────────────────────
+    //  Guardar superbloque 
     file.seekp(partition.start);
     file.write((char*)&sb, sizeof(Superblock));
 
@@ -297,7 +297,7 @@ inline std::string execute(
     return result.str();
 }
 
-// ─── Parser ───────────────────────────────────────────────────────────────────
+//  Parser 
 
 inline std::string executeFromLine(const std::string& commandLine) {
     std::istringstream iss(commandLine);

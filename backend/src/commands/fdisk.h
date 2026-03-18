@@ -21,7 +21,7 @@ inline std::string expandPath(const std::string& path) {
     return std::string(home) + path.substr(1);
 }
 
-// ─── PRIMARIA O EXTENDIDA ────────────────────────────────────────────────────
+// PRIMARIA O EXTENDIDA 
 
 inline std::string createPrimaryOrExtended(
     const std::string& path, int size, char type, char fit, const std::string& name)
@@ -121,7 +121,7 @@ inline std::string createPrimaryOrExtended(
     return "Particion creada correctamente";
 }
 
-// ─── LÓGICA ──────────────────────────────────────────────────────────────────
+// LÓGICA 
 
 inline std::string createLogical(
     const std::string& path, int size, char fit, const std::string& name)
@@ -150,7 +150,7 @@ inline std::string createLogical(
 
     int extEnd = extStart + extSize;
 
-    // ── Recorrer cadena de EBRs ──────────────────────────────────────────────
+    // Recorrer cadena de EBRs 
     int prevEBRpos = -1;   // posición del EBR anterior (para actualizar part_next)
     int curEBRpos  = extStart;
 
@@ -183,7 +183,7 @@ inline std::string createLogical(
         curEBRpos = ebr.part_next;
     }
 
-    // ── Calcular espacios libres dentro de la extendida ──────────────────────
+    //  Calcular espacios libres dentro de la extendida 
     std::sort(usedInExt.begin(), usedInExt.end(),
               [](const Seg& a, const Seg& b){ return a.start < b.start; });
 
@@ -223,7 +223,7 @@ inline std::string createLogical(
         return "Error: No hay espacio suficiente en la particion extendida";
     }
 
-    // ── Crear el nuevo EBR ───────────────────────────────────────────────────
+    //  Crear el nuevo EBR 
     int newEBRpos   = bestStart;
     int newDataStart = newEBRpos + (int)sizeof(EBR);
 
@@ -238,7 +238,7 @@ inline std::string createLogical(
     file.seekp(newEBRpos);
     file.write(reinterpret_cast<char*>(&newEBR), sizeof(EBR));
 
-    // ── Enlazar: el EBR anterior apunta al nuevo ─────────────────────────────
+    //  Enlazar: el EBR anterior apunta al nuevo 
     if (prevEBRpos != newEBRpos) {
         // Leer EBR anterior, actualizar part_next y reescribir
         EBR prevEBR;
@@ -255,7 +255,7 @@ inline std::string createLogical(
     return "Particion logica creada correctamente";
 }
 
-// ─── PARSER ──────────────────────────────────────────────────────────────────
+//  PARSER 
 
 inline std::string getParam(const std::string& line, const std::string& key) {
     // Búsqueda case-insensitive

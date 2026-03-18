@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>MIA — EXT2 Shell</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+ 
+<div class="toolbar">
+    <div class="toolbar-brand">MIA <span>EXT2 Shell</span></div>
+    <div class="toolbar-actions">
+        <button onclick="nuevo()">Limpiar</button>
+        <button onclick="document.getElementById('fileInput').click()">Cargar .smia</button>
+        <button onclick="guardarCodigo()">Guardar</button>
+        <button class="btn-ejecutar" onclick="ejecutar()">▶ Ejecutar</button>
+        <button onclick="limpiarConsola()">Limpiar consola</button>
+        <input type="file" id="fileInput" accept=".smia,.txt" style="display:none" onchange="cargarArchivo(event)">
+    </div>
+</div>
+ 
+<div class="container">
+ 
+    <!-- Editor -->
+    <div class="editor-panel">
+        <div class="panel-header">Editor de comandos</div>
+        <div class="editor-container">
+            <pre id="lineNumbers">1</pre>
+            <textarea id="editor"
+                spellcheck="false"
+                placeholder="# Escribe tus comandos aquí&#10;mkdisk -size=50 -unit=M -path=~/Discos/Disco1.mia"
+                oninput="actualizarLineas()"
+                onscroll="sincronizarScroll()"></textarea>
+        </div>
+    </div>
+ 
+    <!-- Panel derecho: consola + reportes -->
+    <div class="right-panel">
+ 
+        <!-- Consola -->
+        <div class="console-panel">
+            <div class="panel-header">Consola de salida</div>
+            <div class="console" id="console"></div>
+        </div>
+ 
+        <!-- Visor de reportes -->
+        <div class="reports-panel">
+            <div class="panel-header">
+                Reportes
+                <button onclick="limpiarReportes()" style="float:right;font-size:11px;">Limpiar</button>
+            </div>
+            <div class="reports-body" id="reportsBody">
+                <div class="reports-empty" id="reportsEmpty">
+                    Los reportes generados con <code>rep</code> aparecerán aquí automáticamente.
+                </div>
+            </div>
+        </div>
+ 
+    </div>
+</div>
+ 
+<script src="script.js"></script>
+</body>
+</html>

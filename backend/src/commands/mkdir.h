@@ -16,7 +16,7 @@
 
 namespace CommandMkdir {
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+//  Helpers 
 
 inline std::vector<std::string> splitPath(const std::string& path) {
     std::vector<std::string> tokens;
@@ -69,10 +69,10 @@ inline void writeFolderBlock(std::fstream& file, Superblock& sb, int blockIndex,
     file.write((char*)&block, sizeof(FolderBlock));
 }
 
-/*
-    Busca un nombre en un directorio (por su inodo).
-    Retorna el índice de inodo si lo encuentra, -1 si no.
-*/
+
+   // Busca un nombre en un directorio (por su inodo).
+   // Retorna el índice de inodo si lo encuentra, -1 si no.
+
 inline int findInDir(std::fstream& file, Superblock& sb, int dirInodeIndex, const std::string& name) {
     Inode dirInode = readInode(file, sb, dirInodeIndex);
 
@@ -91,11 +91,11 @@ inline int findInDir(std::fstream& file, Superblock& sb, int dirInodeIndex, cons
     return -1;
 }
 
-/*
-    Agrega una entrada (nombre → inodo) a un directorio.
-    Si los bloques actuales están llenos, asigna uno nuevo.
-    Retorna true si tuvo éxito.
-*/
+
+    // Agrega una entrada (nombre va inodo) a un directorio.
+    // Si los bloques actuales están llenos, asigna uno nuevo.
+    // Retorna true si tuvo éxito.
+
 inline bool addEntryToDir(std::fstream& file, Superblock& sb,
                           int dirInodeIndex, const std::string& name, int newInodeIndex) {
     Inode dirInode = readInode(file, sb, dirInodeIndex);
@@ -148,10 +148,9 @@ inline bool addEntryToDir(std::fstream& file, Superblock& sb,
     return true;
 }
 
-/*
-    Crea un directorio dentro de parentInodeIndex.
-    Retorna el índice del nuevo inodo, o -1 si falló.
-*/
+   // Crea un directorio dentro de parentInodeIndex.
+   // Retorna el índice del nuevo inodo, o -1 si falló.
+
 inline int createDirectory(std::fstream& file, Superblock& sb,
                            const std::string& name, int parentInodeIndex) {
     int newInodeIndex = findFreeInode(file, sb);
@@ -175,7 +174,7 @@ inline int createDirectory(std::fstream& file, Superblock& sb,
     newInode.i_uid = 1;
     newInode.i_gid = 1;
     newInode.i_size = 0;
-    newInode.i_type = '1';          // '1' = carpeta (ajusta a tu convención)
+    newInode.i_type = '1';         
     newInode.i_block[0] = newBlockIndex;
     strncpy(newInode.i_perm, "664", 3);
 
@@ -198,7 +197,7 @@ inline int createDirectory(std::fstream& file, Superblock& sb,
     return newInodeIndex;
 }
 
-// ─── Comando principal ────────────────────────────────────────────────────────
+//  Comando principal 
 
 inline std::string execute(const std::string& path, bool createParents) {
 
@@ -223,7 +222,7 @@ inline std::string execute(const std::string& path, bool createParents) {
         return "Error: ruta invalida";
     }
 
-    // ── Navegar hasta el directorio padre ─────────────────────────────────────
+    //  Navegar hasta el directorio padre 
     int currentInodeIndex = 0;  // empieza en raíz
 
     for (int i = 0; i < (int)folders.size() - 1; i++) {
@@ -252,7 +251,7 @@ inline std::string execute(const std::string& path, bool createParents) {
         currentInodeIndex = found;
     }
 
-    // ── Crear el directorio final ─────────────────────────────────────────────
+    //  Crear el directorio final 
     const std::string& newName = folders.back();
 
     if (findInDir(file, sb, currentInodeIndex, newName) != -1) {
@@ -273,7 +272,7 @@ inline std::string execute(const std::string& path, bool createParents) {
     return "Directorio '" + path + "' creado correctamente";
 }
 
-// ─── Parser ───────────────────────────────────────────────────────────────────
+//  Parser 
 
 inline std::string executeFromLine(const std::string& commandLine) {
     std::istringstream iss(commandLine);

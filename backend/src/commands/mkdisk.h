@@ -88,7 +88,7 @@ inline std::string createDisk(int size, const std::string& unit,
            "Firma: "  + std::to_string(mbr.mbr_dsk_signature);
 }
 
-// ─── Parser con validación de parámetros desconocidos ────────────────────────
+//  Parser con validación de parámetros desconocidos 
 
 inline std::string execute(const std::string& commandLine) {
 
@@ -110,7 +110,7 @@ inline std::string execute(const std::string& commandLine) {
         else if (lower.find("-unit=") == 0) unit    = token.substr(6);
         else if (lower.find("-fit=")  == 0) fitStr  = token.substr(5);
         else {
-            // Cualquier token que empiece con '-' y no sea conocido → error
+            // Cualquier token que empiece con '-' y no sea conocido da error
             if (!token.empty() && token[0] == '-') {
                 hasUnknown   = true;
                 unknownParam = token;

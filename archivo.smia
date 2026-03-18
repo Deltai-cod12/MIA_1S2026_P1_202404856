@@ -122,7 +122,7 @@ mkgrp -name=sys
 # ERROR: grupo ya existe
 mkgrp -name=sys
 
-# ─── CAT ─────────────────────────────────────────────────────
+# ─── CAT ─
 cat -file1=/users.txt
 
 # ─── 10. RMGRP ───────────────────────────────────────────────
@@ -209,7 +209,7 @@ mkfile -path=/home/archivos/b1.txt -size=-45
 # Recursivo: crea carpetas y archivo
 mkfile -r -path=/home/archivos/user/docs/usac/archivos/proyectos/fase1/entrada.txt
 
-# ─── CAT ─────────────────────────────────────────────────────
+# ─── CAT ─
 
 cat -file1=/home/archivos/user/docs/Tarea2.txt
 cat -file1=/home/archivos/user/docs/Tarea3.txt

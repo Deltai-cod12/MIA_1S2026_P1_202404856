@@ -5,6 +5,8 @@
 #include <iostream>
 #include "../models/mounted_partitions.h"
 
+// Comando para ver las particiones montadas
+
 namespace CommandMounted {
 
     inline std::string execute(){

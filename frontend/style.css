@@ -1,0 +1,343 @@
+/* ── Reset y variables ─────────────────────────────────── */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+    --bg:         #1e1e2e;
+    --panel:      #181825;
+    --input:      #11111b;
+    --border:     #313244;
+    --accent:     #89b4fa;
+    --green:      #a6e3a1;
+    --red:        #f38ba8;
+    --yellow:     #f9e2af;
+    --comment:    #6c7086;
+    --text:       #cdd6f4;
+    --subtext:    #a6adc8;
+    --font-mono:  'Courier New', 'Consolas', monospace;
+    --font-ui:    system-ui, sans-serif;
+}
+
+html, body {
+    height: 100vh;
+    max-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 14px;
+    overflow: hidden;   /* SIN scroll en body */
+}
+
+/* ── Toolbar ───────────────────────────────────────────── */
+.toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    height: 48px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;     /* nunca se encoge */
+}
+
+.toolbar-brand {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--accent);
+    letter-spacing: 1px;
+    white-space: nowrap;
+}
+
+.toolbar-brand span {
+    font-size: 11px;
+    color: var(--comment);
+    font-weight: normal;
+    margin-left: 8px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.toolbar-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
+.toolbar button {
+    padding: 5px 12px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--subtext);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--font-ui);
+    white-space: nowrap;
+}
+
+.toolbar button:hover {
+    background: var(--border);
+    color: var(--text);
+}
+
+.toolbar .btn-ejecutar {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--input);
+    font-weight: 700;
+}
+
+.toolbar .btn-ejecutar:hover {
+    background: #74c7ec;
+    border-color: #74c7ec;
+}
+
+.toolbar .btn-ejecutar:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ── Layout principal ──────────────────────────────────── */
+.container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    height: calc(100vh - 48px);  /* altura exacta disponible */
+    overflow: hidden;             /* sin desborde */
+}
+
+/* ── Panel header común ────────────────────────────────── */
+.panel-header {
+    padding: 8px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--comment);
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;   /* no se encoge */
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.panel-header button {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--comment);
+    font-size: 11px;
+    padding: 2px 8px;
+    cursor: pointer;
+}
+
+.panel-header button:hover {
+    background: var(--border);
+    color: var(--text);
+}
+
+/* ── Editor (columna izquierda) ────────────────────────── */
+.editor-panel {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+    background: var(--input);
+    height: 100%;        /* ocupa toda la altura disponible */
+    overflow: hidden;
+}
+
+.editor-container {
+    display: flex;
+    flex: 1;
+    overflow: hidden;    /* el scroll lo maneja el textarea */
+    min-height: 0;       /* crítico para que flex respete el límite */
+}
+
+#lineNumbers {
+    padding: 10px 10px 10px 12px;
+    background: var(--panel);
+    color: var(--comment);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.6;
+    text-align: right;
+    user-select: none;
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+    min-width: 44px;
+    flex-shrink: 0;
+}
+
+#editor {
+    flex: 1;
+    padding: 10px 14px;
+    background: var(--input);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.6;
+    border: none;
+    outline: none;
+    resize: none;
+    overflow-y: scroll;   /* scroll interno del editor */
+    overflow-x: auto;
+    tab-size: 4;
+    height: 100%;
+}
+
+#editor::placeholder { color: var(--comment); }
+
+/* ── Columna derecha ───────────────────────────────────── */
+.right-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* ── Consola — mitad superior ──────────────────────────── */
+.console-panel {
+    display: flex;
+    flex-direction: column;
+    height: 50%;         /* exactamente la mitad */
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+}
+
+.console {
+    flex: 1;
+    padding: 10px 14px;
+    background: var(--input);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.7;
+    overflow-y: auto;    /* scroll en la consola */
+    overflow-x: hidden;
+    min-height: 0;
+}
+
+/* Tipos de línea */
+.console-line    { display: block; word-break: break-word; }
+.console-normal  { color: var(--text); }
+.console-cmd     { color: var(--accent); font-weight: 600; }
+.console-header  { color: var(--yellow); }
+.console-comment { color: var(--comment); font-style: italic; }
+.console-error   { color: var(--red); }
+.console-muted   { color: var(--comment); }
+
+/* ── Reportes — mitad inferior ─────────────────────────── */
+.reports-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.reports-body {
+    flex: 1;
+    overflow-y: auto;    /* scroll en reportes */
+    overflow-x: hidden;
+    padding: 10px;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+}
+
+.reports-empty {
+    color: var(--comment);
+    font-size: 12px;
+    text-align: center;
+    margin-top: 24px;
+    line-height: 1.8;
+}
+
+.reports-empty code {
+    background: var(--border);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent);
+}
+
+/* Cada reporte */
+.report-item {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.report-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--input);
+}
+
+.report-name {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--accent);
+}
+
+.report-item-header a {
+    padding: 2px 10px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--subtext);
+    font-size: 11px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.report-item-header a:hover {
+    background: var(--border);
+    color: var(--text);
+}
+
+.report-img {
+    display: block;
+    width: 100%;
+    max-height: 300px;
+    object-fit: contain;
+    background: #fff;
+    padding: 8px;
+}
+
+.report-txt {
+    padding: 10px 14px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text);
+    line-height: 1.6;
+    white-space: pre;
+    overflow-x: auto;
+    max-height: 160px;
+    overflow-y: auto;
+}
+
+.report-fallback {
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--subtext);
+    font-family: var(--font-mono);
+}
+
+/* ── Scrollbars ────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--comment); }

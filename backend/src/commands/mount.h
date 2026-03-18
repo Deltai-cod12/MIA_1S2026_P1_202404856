@@ -16,9 +16,9 @@
 
 namespace CommandMount {
 
-    /* 
-        Estructura para almacenar información de una partición montada
-    */
+     
+    // Estructura para almacenar información de una partición montada
+    
     struct MountedPartition {
         std::string path;
         std::string name;
@@ -28,28 +28,27 @@ namespace CommandMount {
         int size;
     };
 
-    /*
-        Mapa de particiones montadas
-        key = id (vda1, vdb1...)
-    */
+    
+    // Mapa de particiones montadas
+    // key = id (vda1, vdb1...)
+    
     static std::map<std::string, MountedPartition> mountedPartitions;
 
-    /*
-        Mapa de discos montados
-        key = path
-        value = letra asignada
-    */
+      // Mapa de discos montados
+        // key = path
+        // value = letra asignada
+    
     static std::map<std::string, char> diskLetters;
 
-    /*
-        Siguiente letra disponible
-    */
+    
+        // Siguiente letra disponible
+    
     static char nextDiskLetter = 'a';
 
 
-    /*
-        Expande rutas con ~ al home
-    */
+    
+        // Expande rutas con ~ al home
+    
     inline std::string expandPath(const std::string& path) {
 
         if (path.empty() || path[0] != '~')
@@ -67,9 +66,9 @@ namespace CommandMount {
     }
 
 
-    /*
-        Limpia espacios y caracteres nulos en nombres
-    */
+    
+        // Limpia espacios y caracteres nulos en nombres
+    
     inline std::string cleanName(char name[16]) {
 
         std::string result(name);
@@ -88,9 +87,9 @@ namespace CommandMount {
     }
 
 
-    /*
-        Busca una partición dentro del MBR
-    */
+    
+       // Busca una partición dentro del MBR
+    
     inline bool findPartitionInMBR(
         const std::string& path,
         const std::string& name,
@@ -124,9 +123,9 @@ namespace CommandMount {
                 return true;
             }
 
-            /*
-                Buscar particiones lógicas
-            */
+            
+               // Buscar particiones lógicas
+            
             if (mbr.mbr_partitions[i].part_type == 'E') {
 
                 int ebrPos = mbr.mbr_partitions[i].part_start;
@@ -163,9 +162,9 @@ namespace CommandMount {
     }
 
 
-    /*
-        Verifica si la partición ya está montada
-    */
+    
+      //  Verifica si la partición ya está montada
+    
     inline bool isPartitionMounted(
         const std::string& path,
         const std::string& name
@@ -181,10 +180,10 @@ namespace CommandMount {
     }
 
 
-    /*
-        Genera el ID de montaje
-        formato: vd + letra + numero
-    */
+    
+       // Genera el ID de montaje
+       // formato: vd + letra + numero
+    
     inline std::string generateMountID(const std::string& path) {
 
         const std::string carnet = "56";   // últimos dos dígitos de tu carnet
@@ -217,9 +216,9 @@ namespace CommandMount {
         return mountID.str();
     }
 
-    /*
-        Ejecuta el comando mount
-    */
+    
+       // Ejecuta el comando mount
+    
     inline std::string execute(
         const std::string& pathParam,
         const std::string& nameParam
@@ -282,9 +281,9 @@ namespace CommandMount {
     }
 
 
-    /*
-        Lista particiones montadas
-    */
+    
+      //  Lista particiones montadas
+    
     inline std::string listMountedPartitions() {
 
         if (mountedPartitions.empty())
@@ -309,9 +308,9 @@ namespace CommandMount {
     }
 
 
-    /*
-        Obtener partición montada por ID
-    */
+    
+       // Obtener partición montada por ID
+    
     inline bool getMountedPartition(
         const std::string& id,
         MountedPartition& partition
@@ -326,9 +325,9 @@ namespace CommandMount {
         return true;
     }
 
-    /*
-    Parsear linea completa del comando mount
-    */
+    
+   // Parsear linea completa del comando mount
+    
     inline std::string executeFromLine(const std::string& commandLine){
 
         std::istringstream iss(commandLine);
