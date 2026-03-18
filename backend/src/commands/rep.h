@@ -1352,11 +1352,12 @@ inline std::string executeFromLine(const std::string& commandLine) {
     iss >> token;  // saltar "rep"
 
     while (iss >> token) {
-        std::string lower = toLowerCase(token);
+    std::string lower = toLowerCase(token);
         if      (lower.find("-name=")         == 0) name       = token.substr(6);
         else if (lower.find("-path=")         == 0) path       = token.substr(6);
         else if (lower.find("-id=")           == 0) id         = token.substr(4);
         else if (lower.find("-path_file_ls=") == 0) pathFileLs = token.substr(14);
+        else if (lower.find("-ruta=")         == 0) pathFileLs = token.substr(6);
     }
 
     return execute(name, path, id, pathFileLs);
