@@ -82,6 +82,13 @@ inline std::string execute(const std::string& user,
     return "Error: usuario o contrasena incorrectos";
 }
 
+inline std::string stripQuotes(const std::string& s) {
+    std::string r = s;
+    if (!r.empty() && (r.front() == '"' || r.front() == '\'')) r = r.substr(1);
+    if (!r.empty() && (r.back()  == '"' || r.back()  == '\'')) r.pop_back();
+    return r;
+}
+
 inline std::string executeFromLine(const std::string& commandLine) {
     std::istringstream iss(commandLine);
     std::string token, user, pass, id;
@@ -90,8 +97,8 @@ inline std::string executeFromLine(const std::string& commandLine) {
         std::string lower = token;
         std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
 
-        if      (lower.find("-user=") == 0) user = token.substr(6);
-        else if (lower.find("-pass=") == 0) pass = token.substr(6);
+        if      (lower.find("-user=") == 0) user = stripQuotes(token.substr(6));
+        else if (lower.find("-pass=") == 0) pass = stripQuotes(token.substr(6));
         else if (lower.find("-id=")   == 0) id   = token.substr(4);
     }
 

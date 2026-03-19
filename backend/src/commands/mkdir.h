@@ -76,21 +76,19 @@ inline void writeFolderBlock(std::fstream& file, Superblock& sb, int blockIndex,
 inline int findInDir(std::fstream& file, Superblock& sb, int dirInodeIndex, const std::string& name) {
     Inode dirInode = readInode(file, sb, dirInodeIndex);
 
-    // Recorre bloques directos
     for (int b = 0; b < 12; b++) {
         if (dirInode.i_block[b] == -1) continue;
         FolderBlock block = readFolderBlock(file, sb, dirInode.i_block[b]);
         for (int i = 0; i < 4; i++) {
-            if (dirInode.i_block[b] != -1 &&
-                block.b_content[i].b_inodo != -1 &&
-                name == block.b_content[i].b_name) {
+            if (block.b_content[i].b_inodo == -1) continue;
+
+            //Comparar máximo 11 chars (b_name tiene 12 bytes: 11 útiles + \0)
+            if (strncmp(block.b_content[i].b_name, name.c_str(), 11) == 0)
                 return block.b_content[i].b_inodo;
-            }
         }
     }
     return -1;
 }
-
 
     // Agrega una entrada (nombre va inodo) a un directorio.
     // Si los bloques actuales están llenos, asigna uno nuevo.
@@ -275,22 +273,34 @@ inline std::string execute(const std::string& path, bool createParents) {
 //  Parser 
 
 inline std::string executeFromLine(const std::string& commandLine) {
-    std::istringstream iss(commandLine);
-    std::string token;
     std::string path;
     bool createParents = false;
 
-    iss >> token;  // saltar "mkdir"
+    // Extraer -path= manejando comillas con espacios
+    size_t pathPos = commandLine.find("-path=");
+    if (pathPos == std::string::npos)
+        pathPos = commandLine.find("-Path=");
 
-    while (iss >> token) {
-        std::string lower = token;
-        std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
-
-        if (lower.find("-path=") == 0)
-            path = token.substr(6);
-        else if (lower == "-p")
-            createParents = true;
+    if (pathPos != std::string::npos) {
+        size_t valStart = pathPos + 6;
+        if (valStart < commandLine.size() && commandLine[valStart] == '"') {
+            // Ruta entre comillas (puede tener espacios)
+            size_t closeQuote = commandLine.find('"', valStart + 1);
+            if (closeQuote != std::string::npos)
+                path = commandLine.substr(valStart + 1, closeQuote - valStart - 1);
+        } else {
+            // Ruta sin comillas — termina en espacio
+            size_t valEnd = commandLine.find(' ', valStart);
+            if (valEnd == std::string::npos) valEnd = commandLine.size();
+            path = commandLine.substr(valStart, valEnd - valStart);
+        }
     }
+
+    // Detectar flag -p
+    std::string lower = commandLine;
+    std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+    if (lower.find(" -p") != std::string::npos || lower.find("\t-p") != std::string::npos)
+        createParents = true;
 
     if (path.empty())
         return "Error: mkdir requiere -path";

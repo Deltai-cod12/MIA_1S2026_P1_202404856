@@ -8,6 +8,7 @@
 #include <cstring>
 #include "../models/structs.h"
 #include "../models/mounted_partitions.h"
+#include "../session/session.h"
 
 using namespace std;
 
@@ -93,7 +94,7 @@ namespace CommandCat {
                 if(folder.b_content[j].b_inodo==-1)
                     continue;
 
-                if(strcmp(folder.b_content[j].b_name, pathParts[level].c_str())==0){
+                if(strncmp(folder.b_content[j].b_name, pathParts[level].c_str(), 11)==0){
 
                     return searchInode(
                         disk,
@@ -158,13 +159,16 @@ namespace CommandCat {
         return content;
     }
 
-    // OBTENER PARTICION MONTADA
+    // OBTENER PARTICION MONTADA — usar sesión activa
     MountedPartition getMounted(){
+        if(!currentSession.active)
+            throw runtime_error("Error: no hay sesion activa");
 
-        if(mountedPartitions.empty())
-            throw runtime_error("No hay particiones montadas");
+        for(auto& mp : mountedPartitions)
+            if(mp.id == currentSession.id)
+                return mp;
 
-        return mountedPartitions[0];
+        throw runtime_error("Error: particion de la sesion no montada");
     }
 
     // EJECUTAR CAT

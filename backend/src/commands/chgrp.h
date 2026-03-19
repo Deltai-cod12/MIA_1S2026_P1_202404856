@@ -103,6 +103,13 @@ inline std::string execute(const std::string& user, const std::string& grp) {
     return "Grupo del usuario cambiado correctamente";
 }
 
+inline std::string stripQuotes(const std::string& s) {
+    std::string r = s;
+    if (!r.empty() && (r.front() == '"' || r.front() == '\'')) r = r.substr(1);
+    if (!r.empty() && (r.back()  == '"' || r.back()  == '\'')) r.pop_back();
+    return r;
+}
+
 inline std::string executeFromLine(const std::string& commandLine) {
     std::istringstream iss(commandLine);
     std::string token, user, grp;
@@ -110,8 +117,8 @@ inline std::string executeFromLine(const std::string& commandLine) {
     while (iss >> token) {
         std::string lower = token;
         std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
-        if      (lower.find("-user=") == 0) user = token.substr(6);
-        else if (lower.find("-grp=")  == 0) grp  = token.substr(5);
+        if      (lower.find("-user=") == 0) user = stripQuotes(token.substr(6));
+        else if (lower.find("-grp=")  == 0) grp  = stripQuotes(token.substr(5));
     }
 
     if (user.empty() || grp.empty())
