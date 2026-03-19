@@ -213,7 +213,7 @@ inline std::string execute(
             );
             hostFile.close();
         } else {
-            // ✅ No guardar la ruta como contenido — retornar error
+            // No guardar la ruta como contenido — retornar error
             file.close();
             return "Error: no se pudo abrir el archivo -cont='" + cont + "'";
         }
