@@ -2,63 +2,125 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>MIA — EXT2 Shell</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C++Disk 2.0 — MIA</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
- 
+
+<!-- ── TOOLBAR ── -->
 <div class="toolbar">
-    <div class="toolbar-brand">MIA <span>EXT2 Shell</span></div>
+    <div class="toolbar-brand">
+        <span class="brand-icon">⬡</span>
+        C++Disk <span class="brand-sub">2.0</span>
+    </div>
+
+    <!-- Badge de sesión -->
+    <div class="toolbar-center" id="sessionBadge">
+        <span class="session-dot"></span>
+        <span id="sessionLabel">Sesión (demo)</span>
+    </div>
+
     <div class="toolbar-actions">
-        <button onclick="nuevo()">Limpiar</button>
-        <button onclick="document.getElementById('fileInput').click()">Cargar .smia</button>
-        <button onclick="guardarCodigo()">Guardar</button>
-        <button class="btn-ejecutar" onclick="ejecutar()">▶ Ejecutar</button>
-        <button onclick="limpiarConsola()">Limpiar consola</button>
-        <input type="file" id="fileInput" accept=".smia,.txt" style="display:none" onchange="cargarArchivo(event)">
+        <button class="btn-ghost" onclick="nuevo()">Limpiar</button>
+
+        <button class="btn-ghost" onclick="document.getElementById('fileInput').click()">
+            Cargar .smia
+        </button>
+
+        <button class="btn-ghost" onclick="guardarCodigo()">Guardar</button>
+
+        <button class="btn-ghost" onclick="limpiarConsola()">Consola</button>
+
+        <div class="toolbar-sep"></div>
+
+        <!-- BOTONES VISIBLES -->
+        <button id="btnLogin" class="btn-accent"
+            onclick="window.location.href='login.html'">
+            Iniciar Sesión
+        </button>
+
+        <button id="btnVisor" class="btn-teal"
+            onclick="window.location.href='visualizador.html'">
+            Explorador
+        </button>
+
+        <button id="btnLogout" class="btn-danger"
+            onclick="cerrarSesion()">
+            Cerrar Sesión
+        </button>
+
+        <button class="btn-ejecutar" onclick="ejecutar()">
+            ▶ Ejecutar
+        </button>
+
+        <input type="file" id="fileInput"
+            accept=".smia,.txt"
+            style="display:none"
+            onchange="cargarArchivo(event)">
     </div>
 </div>
- 
+
+<!-- ── LAYOUT ── -->
 <div class="container">
- 
+
     <!-- Editor -->
     <div class="editor-panel">
-        <div class="panel-header">Editor de comandos</div>
+        <div class="panel-header">
+            <span>Editor de comandos</span>
+            <span class="panel-hint">Ctrl+Enter para ejecutar</span>
+        </div>
+
         <div class="editor-container">
             <pre id="lineNumbers">1</pre>
+
             <textarea id="editor"
                 spellcheck="false"
-                placeholder="# Escribe tus comandos aquí&#10;mkdisk -size=50 -unit=M -path=~/Discos/Disco1.mia"
+                placeholder="# C++Disk 2.0 — Escribe tus comandos&#10;# mkdisk -size=50 -unit=M -path=~/Discos/Disco1.mia&#10;# mkfs -type=full -fs=3fs -id=561A"
                 oninput="actualizarLineas()"
-                onscroll="sincronizarScroll()"></textarea>
+                onscroll="sincronizarScroll()"
+                onkeydown="atajoTeclado(event)">
+            </textarea>
         </div>
     </div>
- 
-    <!-- Panel derecho: consola + reportes -->
+
+    <!-- Panel derecho -->
     <div class="right-panel">
- 
+
         <!-- Consola -->
         <div class="console-panel">
-            <div class="panel-header">Consola de salida</div>
-            <div class="console" id="console"></div>
-        </div>
- 
-        <!-- Visor de reportes -->
-        <div class="reports-panel">
             <div class="panel-header">
-                Reportes
-                <button onclick="limpiarReportes()" style="float:right;font-size:11px;">Limpiar</button>
+                <span>Consola de salida</span>
+                <span id="cmdCount" class="panel-badge">0 cmd</span>
             </div>
-            <div class="reports-body" id="reportsBody">
-                <div class="reports-empty" id="reportsEmpty">
-                    Los reportes generados con <code>rep</code> aparecerán aquí automáticamente.
+
+            <div class="console" id="console">
+                <div class="console-line console-muted">
+                    # C++Disk 2.0 listo. Escribe comandos y presiona Ejecutar.
                 </div>
             </div>
         </div>
- 
+
+        <!-- Reportes -->
+        <div class="reports-panel">
+            <div class="panel-header">
+                <span>Reportes</span>
+                <button onclick="limpiarReportes()">Limpiar</button>
+            </div>
+
+            <div class="reports-body" id="reportsBody">
+                <div class="reports-empty" id="reportsEmpty">
+                    <div class="reports-empty-icon">◫</div>
+                    <div>Los reportes generados con <code>rep</code> aparecerán aquí</div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
- 
+
+<script src="common.js"></script>
 <script src="script.js"></script>
+
 </body>
 </html>

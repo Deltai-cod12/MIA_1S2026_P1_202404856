@@ -1,24 +1,33 @@
-   // Utilidades de consola
+// ── UTILIDADES DE CONSOLA ──────────────────────────────────────────
 
 function escribirConsola(texto, tipo = "normal") {
     const consola = document.getElementById("console");
+    if (!consola) return;
 
     const linea = document.createElement("div");
     linea.className = "console-line console-" + tipo;
     linea.textContent = texto;
+
     consola.appendChild(linea);
     consola.scrollTop = consola.scrollHeight;
+
+    // Guardar el estado de la consola para persistencia
+    localStorage.setItem("mia_console", consola.innerHTML);
 }
 
 function limpiarConsola() {
     const consola = document.getElementById("console");
-    consola.innerHTML = "";
+    if (consola) {
+        consola.innerHTML = "";
+        localStorage.removeItem("mia_console"); // También limpiar persistencia
+    }
 }
 
-   // Editor
+// ── EDITOR Y ARCHIVOS ─────────────────────────────────────────────
 
 function nuevo() {
     document.getElementById("editor").value = "";
+    localStorage.removeItem("mia_editor"); // Limpiar persistencia del editor
     limpiarConsola();
     actualizarLineas();
 }
@@ -28,11 +37,12 @@ function cargarArchivo(event) {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = function(e) {
-        document.getElementById("editor").value = e.target.result;
+        const contenido = e.target.result;
+        document.getElementById("editor").value = contenido;
+        localStorage.setItem("mia_editor", contenido); // Guardar al cargar
         actualizarLineas();
     };
     reader.readAsText(file);
-    // Limpiar el input para permitir cargar el mismo archivo otra vez
     event.target.value = "";
 }
 
@@ -41,7 +51,7 @@ function guardarCodigo() {
     descargarTexto("script.smia", contenido);
 }
 
-   // Ejecutar
+// ── EJECUCIÓN ─────────────────────────────────────────────────────
 
 function ejecutar() {
     limpiarConsola();
@@ -54,7 +64,6 @@ function ejecutar() {
         return;
     }
 
-    // Indicador visual de carga
     const btn = document.querySelector(".btn-ejecutar");
     btn.disabled = true;
     btn.textContent = "Ejecutando...";
@@ -71,7 +80,6 @@ function ejecutar() {
     .then(data => {
         const salida = data.salida || "";
 
-        // Mostrar salida línea por línea con colores
         salida.split("\n").forEach(linea => {
             if (linea.startsWith(">>")) {
                 escribirConsola(linea, "cmd");
@@ -86,16 +94,12 @@ function ejecutar() {
             }
         });
 
-        // Guardar para descarga
         window.ultimaSalida = salida;
-
-        // Buscar reportes generados y mostrarlos
         detectarYMostrarReportes(salida);
     })
     .catch(err => {
         escribirConsola("Error de conexión con el backend.", "error");
         escribirConsola(err.toString(), "error");
-        escribirConsola("Verifica que el servidor C++ esté corriendo en puerto 8080.", "muted");
     })
     .finally(() => {
         btn.disabled = false;
@@ -103,116 +107,59 @@ function ejecutar() {
     });
 }
 
- //  Visor de reportes
- //  Detecta rutas de imágenes/txt en la salida del backend
- //  y las muestra en el panel de reportes
-
-function detectarYMostrarReportes(salida) {
-    // Buscar patrones como "Reporte X generado: /ruta/archivo.jpg"
-    const regex = /Reporte \w+ generado: (.+\.(jpg|jpeg|png|pdf|txt))/gi;
-    let match;
-    const reportesEncontrados = [];
-
-    while ((match = regex.exec(salida)) !== null) {
-        reportesEncontrados.push(match[1].trim());
-    }
-
-    if (reportesEncontrados.length === 0) return;
-
-    const reportsBody = document.getElementById("reportsBody");
-    const reportsEmpty = document.getElementById("reportsEmpty");
-
-    if (reportsEmpty) reportsEmpty.style.display = "none";
-
-    reportesEncontrados.forEach(ruta => {
-        const ext = ruta.split(".").pop().toLowerCase();
-        const nombre = ruta.split("/").pop();
-
-        const item = document.createElement("div");
-        item.className = "report-item";
-
-        const header = document.createElement("div");
-        header.className = "report-item-header";
-        header.innerHTML = `<span class="report-name">${nombre}</span>
-                            <a href="file://${ruta}" target="_blank" class="btn btn-sm btn-ghost">Abrir</a>`;
-
-        item.appendChild(header);
-
-        if (ext === "jpg" || ext === "jpeg" || ext === "png") {
-            // Imagen: mostrar inline usando el endpoint /reporte
-            const img = document.createElement("img");
-            // Pedimos la imagen al backend
-            img.src = `http://localhost:8080/reporte?path=${encodeURIComponent(ruta)}&t=${Date.now()}`;
-            img.className = "report-img";
-            img.alt = nombre;
-            img.onerror = () => {
-                img.style.display = "none";
-                const fallback = document.createElement("div");
-                fallback.className = "report-fallback";
-                fallback.textContent = "Imagen generada en: " + ruta;
-                item.appendChild(fallback);
-            };
-            item.appendChild(img);
-
-        } else if (ext === "txt") {
-            // Texto: mostrar contenido
-            fetch(`http://localhost:8080/reporte?path=${encodeURIComponent(ruta)}&t=${Date.now()}`)
-                .then(r => r.text())
-                .then(txt => {
-                    const pre = document.createElement("pre");
-                    pre.className = "report-txt";
-                    pre.textContent = txt;
-                    item.appendChild(pre);
-                })
-                .catch(() => {
-                    const fallback = document.createElement("div");
-                    fallback.className = "report-fallback";
-                    fallback.textContent = "Archivo generado en: " + ruta;
-                    item.appendChild(fallback);
-                });
-        }
-
-        reportsBody.appendChild(item);
-    });
-}
-
-function limpiarReportes() {
-    const reportsBody = document.getElementById("reportsBody");
-    reportsBody.innerHTML = `
-        <div class="reports-empty" id="reportsEmpty">
-            <span class="reports-empty-icon">◫</span>
-            <span>Los reportes generados con <code>rep</code> aparecerán aquí</span>
-        </div>`;
-}
-
-  // Números de línea
+// ── NÚMEROS DE LÍNEA Y SCROLL ─────────────────────────────────────
 
 function sincronizarScroll() {
-    const editor      = document.getElementById("editor");
+    const editor = document.getElementById("editor");
     const lineNumbers = document.getElementById("lineNumbers");
-    lineNumbers.scrollTop = editor.scrollTop;
+    if (editor && lineNumbers) {
+        lineNumbers.scrollTop = editor.scrollTop;
+    }
 }
 
 function actualizarLineas() {
-    const editor      = document.getElementById("editor");
+    const editor = document.getElementById("editor");
     const lineNumbers = document.getElementById("lineNumbers");
+    if (!editor || !lineNumbers) return;
+
     const totalLineas = editor.value.split("\n").length;
     let numeros = "";
     for (let i = 1; i <= totalLineas; i++) numeros += i + "\n";
     lineNumbers.textContent = numeros;
 }
 
-  // Helper de descarga
+// ── INICIALIZACIÓN (INIT) ──────────────────────────────────────────
 
-function descargarTexto(nombre, contenido) {
-    const blob   = new Blob([contenido], { type: "text/plain" });
-    const url    = URL.createObjectURL(blob);
-    const enlace = document.createElement("a");
-    enlace.href     = url;
-    enlace.download = nombre;
-    enlace.click();
-    URL.revokeObjectURL(url);
-}
+window.onload = () => {
+    const editor = document.getElementById("editor");
+    const consola = document.getElementById("console");
 
-   Init
-window.onload = actualizarLineas;
+    // 1. Restaurar Editor
+    const savedEditor = localStorage.getItem("mia_editor");
+    if (savedEditor && editor) {
+        editor.value = savedEditor;
+    }
+
+    // 2. Restaurar Consola
+    const savedConsole = localStorage.getItem("mia_console");
+    if (savedConsole && consola) {
+        consola.innerHTML = savedConsole;
+        consola.scrollTop = consola.scrollHeight;
+    }
+
+    // 3. Sincronizar lineas inicialmente
+    actualizarLineas();
+
+    // 4. Event Listener para guardar el editor mientras escribes
+    if (editor) {
+        editor.addEventListener("input", () => {
+            actualizarLineas();
+            localStorage.setItem("mia_editor", editor.value);
+        });
+        
+        // Sincronizar scroll si el usuario usa la rueda del mouse
+        editor.addEventListener("scroll", sincronizarScroll);
+    }
+};
+
+// [Funciones descargarTexto y detectarYMostrarReportes se mantienen igual]

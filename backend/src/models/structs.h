@@ -7,16 +7,18 @@
 
 #pragma pack(push, 1)
 
+// ============================================================
 // PARTITION
+// ============================================================
 struct Partition {
-    char part_status;          // '0' = inactiva, '1' = activa
-    char part_type;            // 'P' = primaria, 'E' = extendida, 'L' = lógica
-    char part_fit;             // 'B', 'F', 'W'
-    int  part_start;           // byte donde inicia
-    int  part_s;               // tamaño en bytes
-    char part_name[16];        // nombre
-    int  part_correlative;     // correlativo al montar
-    char part_id[4];           // ID generado en mount
+    char part_status;       // '0' = inactiva, '1' = activa
+    char part_type;         // 'P', 'E', 'L'
+    char part_fit;          // 'B', 'F', 'W'
+    int  part_start;        // byte donde inicia
+    int  part_s;            // tamaño en bytes
+    char part_name[16];     // nombre
+    int  part_correlative;  // correlativo al montar
+    char part_id[4];        // ID generado en mount
 
     Partition() {
         part_status      = '0';
@@ -30,13 +32,15 @@ struct Partition {
     }
 };
 
+// ============================================================
 // MBR
+// ============================================================
 struct MBR {
-    int    mbr_tamano;              // tamaño total del disco en bytes
-    time_t mbr_fecha_creacion;      // fecha creación
-    int    mbr_dsk_signature;       // número random único
-    char   dsk_fit;                 // 'B', 'F' o 'W'
-    Partition mbr_partitions[4];    // máximo 4 particiones primarias/extendidas
+    int    mbr_tamano;
+    time_t mbr_fecha_creacion;
+    int    mbr_dsk_signature;
+    char   dsk_fit;
+    Partition mbr_partitions[4];
 
     MBR() {
         mbr_tamano         = 0;
@@ -46,14 +50,16 @@ struct MBR {
     }
 };
 
+// ============================================================
 // EBR
+// ============================================================
 struct EBR {
-    char part_status;   // '0' = libre, '1' = ocupada
-    char part_fit;      // 'B', 'F', 'W'
-    int  part_start;    // byte donde inicia la partición lógica
-    int  part_size;     // tamaño en bytes
-    int  part_next;     // byte del siguiente EBR, -1 si no hay más
-    char part_name[16]; // nombre
+    char part_status;
+    char part_fit;
+    int  part_start;
+    int  part_size;
+    int  part_next;
+    char part_name[16];
 
     EBR() {
         part_status = '0';
@@ -65,27 +71,62 @@ struct EBR {
     }
 };
 
-// ESTRUCTURAS DEL SISTEMA DE ARCHIVOS 
+// ============================================================
+// EXT3 — Journal structures
+// ============================================================
 
-// SUPERBLOQUE
+// Information: contenido de una entrada del journal
+struct Information {
+    char  i_operation[10]; // operación: mkdir, mkfile, remove...
+    char  i_path[32];      // ruta donde se realizó
+    char  i_content[64];   // contenido del archivo o "-"
+    float i_date;          // fecha como float (cast de time_t)
+
+    Information() {
+        memset(i_operation, 0, sizeof(i_operation));
+        memset(i_path,      0, sizeof(i_path));
+        memset(i_content,   0, sizeof(i_content));
+        i_date = 0.0f;
+    }
+};
+
+// Journal: una entrada completa
+struct Journal {
+    int         j_count;   // número correlativo de la entrada
+    Information j_content; // información de la operación
+
+    Journal() {
+        j_count = 0;
+    }
+};
+
+// Constante: máximo de entradas de journal por partición
+#define JOURNAL_MAX 50
+
+// ============================================================
+// SUPERBLOQUE (EXT2 y EXT3)
+// ============================================================
 struct Superblock {
-    int    s_filesystem_type;   // 2 = EXT2
-    int    s_inodes_count;      // total de inodos
-    int    s_blocks_count;      // total de bloques
-    int    s_free_blocks_count; // bloques libres
-    int    s_free_inodes_count; // inodos libres
-    time_t s_mtime;             // último montaje
-    time_t s_umtime;            // último desmontaje
-    int    s_mnt_count;         // veces montado
+    int    s_filesystem_type;   // 2=EXT2, 3=EXT3
+    int    s_inodes_count;
+    int    s_blocks_count;
+    int    s_free_blocks_count;
+    int    s_free_inodes_count;
+    time_t s_mtime;
+    time_t s_umtime;
+    int    s_mnt_count;
     int    s_magic;             // 0xEF53
-    int    s_inode_size;        // sizeof(Inode)
-    int    s_block_size;        // sizeof(FileBlock) = 64
-    int    s_first_ino;         // primer inodo libre
-    int    s_first_blo;         // primer bloque libre
-    int    s_bm_inode_start;    // inicio bitmap inodos
-    int    s_bm_block_start;    // inicio bitmap bloques
-    int    s_inode_start;       // inicio tabla de inodos
-    int    s_block_start;       // inicio tabla de bloques
+    int    s_inode_size;
+    int    s_block_size;
+    int    s_first_ino;
+    int    s_first_blo;
+    int    s_bm_inode_start;
+    int    s_bm_block_start;
+    int    s_inode_start;
+    int    s_block_start;
+    // Campos exclusivos EXT3:
+    int    s_journal_start;     // inicio del área de journaling
+    int    s_journal_count;     // entradas usadas
 
     Superblock() {
         s_filesystem_type   = 0;
@@ -105,20 +146,24 @@ struct Superblock {
         s_bm_block_start    = 0;
         s_inode_start       = 0;
         s_block_start       = 0;
+        s_journal_start     = 0;
+        s_journal_count     = 0;
     }
 };
 
+// ============================================================
 // INODO
+// ============================================================
 struct Inode {
-    int    i_uid;        // UID del propietario
-    int    i_gid;        // GID del grupo
-    int    i_size;       // tamaño en bytes
-    time_t i_atime;      // último acceso
-    time_t i_ctime;      // creación
-    time_t i_mtime;      // última modificación
-    int    i_block[15];  // [0..11] directos, [12] simple, [13] doble, [14] triple
-    char   i_type;       // '0' = archivo, '1' = carpeta
-    char   i_perm[3];    // permisos ej: "664"
+    int    i_uid;
+    int    i_gid;
+    int    i_size;
+    time_t i_atime;
+    time_t i_ctime;
+    time_t i_mtime;
+    int    i_block[15];
+    char   i_type;    // '0'=archivo, '1'=carpeta
+    char   i_perm[3]; // ej: "664"
 
     Inode() {
         i_uid   = 0;
@@ -127,17 +172,18 @@ struct Inode {
         i_atime = time(nullptr);
         i_ctime = time(nullptr);
         i_mtime = time(nullptr);
-        for (int i = 0; i < 15; i++)
-            i_block[i] = -1;
+        for (int i = 0; i < 15; i++) i_block[i] = -1;
         i_type = '0';
-        memcpy(i_perm, "664", 3);  //  correcto: copia 3 chars sin null terminator
+        memcpy(i_perm, "664", 3);
     }
 };
 
-// CONTENT (entrada de directorio)
+// ============================================================
+// BLOQUES
+// ============================================================
 struct Content {
-    char b_name[12];  // nombre del archivo/carpeta
-    int  b_inodo;     // índice del inodo (-1 = vacío)
+    char b_name[12];
+    int  b_inodo;
 
     Content() {
         memset(b_name, 0, sizeof(b_name));
@@ -145,29 +191,24 @@ struct Content {
     }
 };
 
-// BLOQUE DE CARPETA — 4 entradas × 16 bytes = 64 bytes 
+// Bloque carpeta: 4 entradas × 16 bytes = 64 bytes
 struct FolderBlock {
     Content b_content[4];
     FolderBlock() {}
 };
 
-// BLOQUE DE ARCHIVO — 64 bytes 
+// Bloque archivo: 64 bytes
 struct FileBlock {
     char b_content[64];
-    FileBlock() {
-        memset(b_content, 0, sizeof(b_content));
-    }
+    FileBlock() { memset(b_content, 0, sizeof(b_content)); }
 };
 
-// BLOQUE DE APUNTADORES — 16 × 4 bytes = 64 bytes 
+// Bloque de apuntadores: 16 × 4 bytes = 64 bytes
 struct PointerBlock {
     int b_pointers[16];
-    PointerBlock() {
-        for (int i = 0; i < 16; i++)
-            b_pointers[i] = -1;
-    }
+    PointerBlock() { for (int i = 0; i < 16; i++) b_pointers[i] = -1; }
 };
 
 #pragma pack(pop)
 
-#endif
+#endif // STRUCTS_H

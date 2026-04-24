@@ -16,7 +16,7 @@
 
 namespace CommandMkdir {
 
-//  Helpers 
+// ===================== HELPERS =====================
 
 inline std::vector<std::string> splitPath(const std::string& path) {
     std::vector<std::string> tokens;
@@ -46,7 +46,7 @@ inline int findFreeBlock(std::fstream& file, Superblock& sb) {
 }
 
 inline Inode readInode(std::fstream& file, Superblock& sb, int index) {
-    Inode inode;
+    Inode inode{};
     file.seekg(sb.s_inode_start + index * sizeof(Inode));
     file.read((char*)&inode, sizeof(Inode));
     return inode;
@@ -58,7 +58,7 @@ inline void writeInode(std::fstream& file, Superblock& sb, int index, Inode& ino
 }
 
 inline FolderBlock readFolderBlock(std::fstream& file, Superblock& sb, int blockIndex) {
-    FolderBlock block;
+    FolderBlock block{};
     file.seekg(sb.s_block_start + blockIndex * sizeof(FolderBlock));
     file.read((char*)&block, sizeof(FolderBlock));
     return block;
@@ -69,45 +69,46 @@ inline void writeFolderBlock(std::fstream& file, Superblock& sb, int blockIndex,
     file.write((char*)&block, sizeof(FolderBlock));
 }
 
-
-   // Busca un nombre en un directorio (por su inodo).
-   // Retorna el índice de inodo si lo encuentra, -1 si no.
-
+// ===================== FIX CRÍTICO =====================
 inline int findInDir(std::fstream& file, Superblock& sb, int dirInodeIndex, const std::string& name) {
     Inode dirInode = readInode(file, sb, dirInodeIndex);
 
     for (int b = 0; b < 12; b++) {
         if (dirInode.i_block[b] == -1) continue;
+
         FolderBlock block = readFolderBlock(file, sb, dirInode.i_block[b]);
+
         for (int i = 0; i < 4; i++) {
             if (block.b_content[i].b_inodo == -1) continue;
 
-            //Comparar máximo 11 chars (b_name tiene 12 bytes: 11 útiles + \0)
-            if (strncmp(block.b_content[i].b_name, name.c_str(), 11) == 0)
+            std::string entryName(block.b_content[i].b_name);
+
+            if (entryName == name)
                 return block.b_content[i].b_inodo;
         }
     }
     return -1;
 }
 
-    // Agrega una entrada (nombre va inodo) a un directorio.
-    // Si los bloques actuales están llenos, asigna uno nuevo.
-    // Retorna true si tuvo éxito.
-
+// ===================== AGREGAR ENTRADA =====================
 inline bool addEntryToDir(std::fstream& file, Superblock& sb,
                           int dirInodeIndex, const std::string& name, int newInodeIndex) {
+
     Inode dirInode = readInode(file, sb, dirInodeIndex);
 
-    // Busca slot libre en bloques ya asignados
     for (int b = 0; b < 12; b++) {
         if (dirInode.i_block[b] == -1) continue;
+
         FolderBlock block = readFolderBlock(file, sb, dirInode.i_block[b]);
+
         for (int i = 0; i < 4; i++) {
             if (block.b_content[i].b_inodo == -1) {
                 strncpy(block.b_content[i].b_name, name.c_str(), 11);
                 block.b_content[i].b_name[11] = '\0';
                 block.b_content[i].b_inodo = newInodeIndex;
+
                 writeFolderBlock(file, sb, dirInode.i_block[b], block);
+
                 dirInode.i_mtime = time(nullptr);
                 writeInode(file, sb, dirInodeIndex, dirInode);
                 return true;
@@ -115,21 +116,23 @@ inline bool addEntryToDir(std::fstream& file, Superblock& sb,
         }
     }
 
-    // No hay slot: necesita un bloque nuevo para el directorio padre
     int newBlockIndex = findFreeBlock(file, sb);
     if (newBlockIndex == -1) return false;
 
     int freeSlot = -1;
     for (int b = 0; b < 12; b++) {
-        if (dirInode.i_block[b] == -1) { freeSlot = b; break; }
+        if (dirInode.i_block[b] == -1) {
+            freeSlot = b;
+            break;
+        }
     }
-    if (freeSlot == -1) return false;  // sin apuntadores directos disponibles
 
-    FolderBlock newBlock;
+    if (freeSlot == -1) return false;
+
+    FolderBlock newBlock{};
     strncpy(newBlock.b_content[0].b_name, name.c_str(), 11);
     newBlock.b_content[0].b_name[11] = '\0';
     newBlock.b_content[0].b_inodo = newInodeIndex;
-    // los otros 3 quedan en -1 por el constructor
 
     writeFolderBlock(file, sb, newBlockIndex, newBlock);
 
@@ -138,7 +141,6 @@ inline bool addEntryToDir(std::fstream& file, Superblock& sb,
     file.write(&used, 1);
 
     dirInode.i_block[freeSlot] = newBlockIndex;
-    dirInode.i_mtime = time(nullptr);
     writeInode(file, sb, dirInodeIndex, dirInode);
 
     sb.s_free_blocks_count--;
@@ -146,57 +148,56 @@ inline bool addEntryToDir(std::fstream& file, Superblock& sb,
     return true;
 }
 
-   // Crea un directorio dentro de parentInodeIndex.
-   // Retorna el índice del nuevo inodo, o -1 si falló.
-
+// ===================== CREAR DIRECTORIO =====================
 inline int createDirectory(std::fstream& file, Superblock& sb,
                            const std::string& name, int parentInodeIndex) {
+
     int newInodeIndex = findFreeInode(file, sb);
     if (newInodeIndex == -1) return -1;
 
     int newBlockIndex = findFreeBlock(file, sb);
     if (newBlockIndex == -1) return -1;
 
-    // Bloque con . y ..
-    FolderBlock newBlock;
+    FolderBlock newBlock{};
+
+    for (int i = 0; i < 4; i++) {
+        newBlock.b_content[i].b_inodo = -1;
+        memset(newBlock.b_content[i].b_name, 0, 12);
+    }    
     strcpy(newBlock.b_content[0].b_name, ".");
     newBlock.b_content[0].b_inodo = newInodeIndex;
+
     strcpy(newBlock.b_content[1].b_name, "..");
     newBlock.b_content[1].b_inodo = parentInodeIndex;
-    // [2] y [3] quedan en -1 por constructor
 
     writeFolderBlock(file, sb, newBlockIndex, newBlock);
 
-    // Inodo del nuevo directorio
-    Inode newInode;
+    Inode newInode{};
     newInode.i_uid = 1;
     newInode.i_gid = 1;
-    newInode.i_size = 0;
-    newInode.i_type = '1';         
+    newInode.i_type = '1';
     newInode.i_block[0] = newBlockIndex;
     strncpy(newInode.i_perm, "664", 3);
 
     writeInode(file, sb, newInodeIndex, newInode);
 
-    // Marcar bitmaps
     char used = '1';
     file.seekp(sb.s_bm_inode_start + newInodeIndex);
     file.write(&used, 1);
+
     file.seekp(sb.s_bm_block_start + newBlockIndex);
     file.write(&used, 1);
 
     sb.s_free_inodes_count--;
     sb.s_free_blocks_count--;
 
-    // Agregar entrada al directorio padre
     if (!addEntryToDir(file, sb, parentInodeIndex, name, newInodeIndex))
         return -1;
 
     return newInodeIndex;
 }
 
-//  Comando principal 
-
+// ===================== EJECUCIÓN =====================
 inline std::string execute(const std::string& path, bool createParents) {
 
     if (!currentSession.active)
@@ -210,7 +211,7 @@ inline std::string execute(const std::string& path, bool createParents) {
     if (!file.is_open())
         return "Error: no se pudo abrir el disco";
 
-    Superblock sb;
+    Superblock sb{};
     file.seekg(partition.start);
     file.read((char*)&sb, sizeof(Superblock));
 
@@ -220,37 +221,41 @@ inline std::string execute(const std::string& path, bool createParents) {
         return "Error: ruta invalida";
     }
 
-    //  Navegar hasta el directorio padre 
-    int currentInodeIndex = 0;  // empieza en raíz
+    int currentInodeIndex = 0;
 
     for (int i = 0; i < (int)folders.size() - 1; i++) {
+
         int found = findInDir(file, sb, currentInodeIndex, folders[i]);
 
         if (found == -1) {
             if (!createParents) {
                 file.close();
-                return "Error: directorio padre '" + folders[i] +
-                       "' no existe. Use -p para crearlo automaticamente";
+                return "Error: directorio padre '" + folders[i] + "' no existe";
             }
-            // Crear directorio intermedio con -p
+
             found = createDirectory(file, sb, folders[i], currentInodeIndex);
+
             if (found == -1) {
                 file.close();
-                return "Error: sin espacio para crear directorio intermedio '" + folders[i] + "'";
+                return "Error: no se pudo crear '" + folders[i] + "'";
             }
         } else {
-            // Verificar que sea carpeta
             Inode inode = readInode(file, sb, found);
             if (inode.i_type != '1') {
                 file.close();
                 return "Error: '" + folders[i] + "' no es un directorio";
             }
         }
+
+        if (found < 0) {
+            file.close();
+            return "Error interno: inodo invalido";
+        }
+
         currentInodeIndex = found;
     }
 
-    //  Crear el directorio final 
-    const std::string& newName = folders.back();
+    std::string newName = folders.back();
 
     if (findInDir(file, sb, currentInodeIndex, newName) != -1) {
         file.close();
@@ -259,48 +264,53 @@ inline std::string execute(const std::string& path, bool createParents) {
 
     if (createDirectory(file, sb, newName, currentInodeIndex) == -1) {
         file.close();
-        return "Error: no hay espacio disponible en el disco";
+        return "Error: no hay espacio disponible";
     }
 
-    // Guardar superbloque actualizado
     file.seekp(partition.start);
     file.write((char*)&sb, sizeof(Superblock));
 
     file.close();
-    return "Directorio '" + path + "' creado correctamente";
+    return "Directorio creado correctamente";
 }
 
-//  Parser 
-
+// ===================== PARSER =====================
 inline std::string executeFromLine(const std::string& commandLine) {
+
     std::string path;
     bool createParents = false;
 
-    // Extraer -path= manejando comillas con espacios
     size_t pathPos = commandLine.find("-path=");
     if (pathPos == std::string::npos)
         pathPos = commandLine.find("-Path=");
 
     if (pathPos != std::string::npos) {
         size_t valStart = pathPos + 6;
-        if (valStart < commandLine.size() && commandLine[valStart] == '"') {
-            // Ruta entre comillas (puede tener espacios)
-            size_t closeQuote = commandLine.find('"', valStart + 1);
-            if (closeQuote != std::string::npos)
-                path = commandLine.substr(valStart + 1, closeQuote - valStart - 1);
+
+        if (commandLine[valStart] == '"') {
+            size_t end = commandLine.find('"', valStart + 1);
+            path = commandLine.substr(valStart + 1, end - valStart - 1);
         } else {
-            // Ruta sin comillas — termina en espacio
-            size_t valEnd = commandLine.find(' ', valStart);
-            if (valEnd == std::string::npos) valEnd = commandLine.size();
-            path = commandLine.substr(valStart, valEnd - valStart);
+            size_t end = commandLine.find(' ', valStart);
+            if (end == std::string::npos) end = commandLine.size();
+            path = commandLine.substr(valStart, end - valStart);
         }
     }
 
-    // Detectar flag -p
     std::string lower = commandLine;
     std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
-    if (lower.find(" -p") != std::string::npos || lower.find("\t-p") != std::string::npos)
-        createParents = true;
+
+    std::stringstream ss(commandLine);
+    std::string token;
+
+    while (ss >> token) {
+        std::string t = token;
+        std::transform(t.begin(), t.end(), t.begin(), ::tolower);
+
+        if (t == "-p") {
+            createParents = true;
+        }
+    }
 
     if (path.empty())
         return "Error: mkdir requiere -path";
@@ -308,6 +318,6 @@ inline std::string executeFromLine(const std::string& commandLine) {
     return execute(path, createParents);
 }
 
-}  // namespace CommandMkdir
+} // namespace
 
 #endif

@@ -246,6 +246,30 @@ namespace CommandMount {
 
         std::string mountID = generateMountID(path);
 
+        std::fstream diskFile(path, std::ios::in | std::ios::out | std::ios::binary);
+        if (diskFile.is_open()) {
+            MBR mbr;
+            diskFile.read(reinterpret_cast<char*>(&mbr), sizeof(MBR));
+
+            bool found = false;
+            for (int i = 0; i < 4; i++) {
+                std::string currentName = cleanName(mbr.mbr_partitions[i].part_name);
+                if (currentName == name) {
+                    // Guardamos el ID generado en el struct del MBR
+                    memset(mbr.mbr_partitions[i].part_id, 0, 4);
+                    strncpy(mbr.mbr_partitions[i].part_id, mountID.c_str(), 4);
+                    found = true;
+                    break;
+                }
+            }
+
+            if (found) {
+                diskFile.seekp(0, std::ios::beg);
+                diskFile.write(reinterpret_cast<char*>(&mbr), sizeof(MBR));
+            }
+            diskFile.close();
+        }
+
         MountedPartition mounted;
 
         mounted.path = path;
@@ -306,6 +330,28 @@ namespace CommandMount {
 
         return result.str();
     }
+
+
+    
+    //  UNMOUNT (NUEVO - P2)
+    inline void unmountPartition(const std::string& id) {
+
+        // eliminar del map
+        mountedPartitions.erase(id);
+
+        // eliminar del vector global
+        ::mountedPartitions.erase(
+            std::remove_if(
+                ::mountedPartitions.begin(),
+                ::mountedPartitions.end(),
+                [&](const ::MountedPartition& p) {
+                    return p.id == id;
+                }
+            ),
+            ::mountedPartitions.end()
+        );
+    }
+
 
 
     

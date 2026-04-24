@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C++Disk 2.0 — Iniciar Sesión</title>
+<link rel="stylesheet" href="login.css">
+</head>
+<body class="login-body">
+
+<div class="login-bg">
+    <div class="login-grid"></div>
+</div>
+
+<div class="login-wrapper">
+
+    <!-- Brand -->
+    <div class="login-brand">
+        <span class="brand-icon-big">⬡</span>
+        <div>
+            <div class="login-title">C++Disk 2.0</div>
+            <div class="login-subtitle">Sistema de Archivos EXT2/EXT3</div>
+        </div>
+    </div>
+
+    <!-- Card -->
+    <div class="login-card">
+        <div class="login-card-header">Iniciar Sesión</div>
+
+        <div id="loginError" class="login-error" style="display:none"></div>
+
+        <div class="form-group">
+            <label class="form-label">ID de Partición</label>
+            <input id="inputId" class="form-input" type="text"
+                   placeholder="ej. 562A" autocomplete="off"
+                   oninput="this.value=this.value.toUpperCase()">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Usuario</label>
+            <input id="inputUser" class="form-input" type="text"
+                   placeholder="ej. root" autocomplete="off">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Contraseña</label>
+            <div class="input-pass-wrap">
+                <input id="inputPass" class="form-input" type="password"
+                       placeholder="••••••••" autocomplete="current-password"
+                       onkeydown="if(event.key==='Enter')doLogin()">
+                <button class="btn-eye" onclick="togglePass()" title="Mostrar/ocultar">👁</button>
+            </div>
+        </div>
+
+        <div class="form-check">
+            <input id="checkRecordar" type="checkbox">
+            <label for="checkRecordar">Recordar usuario</label>
+        </div>
+
+        <button class="btn-login" id="btnSubmit" onclick="doLogin()">
+            <span id="btnLoginText">Iniciar Sesión</span>
+        </button>
+
+        <div class="login-back">
+            <a href="index.html">← Volver a la consola</a>
+        </div>
+    </div>
+
+</div>
+
+<script src="common.js"></script>
+<script>
+
+const API = "http://localhost:8080";
+
+// Restaurar usuario recordado
+window.onload = () => {
+    const saved = localStorage.getItem("mia_remember_user");
+    const savedId = localStorage.getItem("mia_remember_id");
+    if (saved) {
+        document.getElementById("inputUser").value = saved;
+        document.getElementById("checkRecordar").checked = true;
+    }
+    if (savedId) {
+        document.getElementById("inputId").value = savedId;
+    }
+    // Si ya hay sesión activa, redirigir
+    checkSession().then(s => {
+        if (s && s.active) window.location.href = "visualizador.html";
+    });
+};
+
+function togglePass() {
+    const inp = document.getElementById("inputPass");
+    inp.type = inp.type === "password" ? "text" : "password";
+}
+
+async function doLogin() {
+    const id   = document.getElementById("inputId").value.trim();
+    const user = document.getElementById("inputUser").value.trim();
+    const pass = document.getElementById("inputPass").value;
+    const rec  = document.getElementById("checkRecordar").checked;
+
+    // Validar
+    const err = document.getElementById("loginError");
+    if (!id || !user || !pass) {
+        showError("Todos los campos son obligatorios.");
+        return;
+    }
+
+    // Recordar usuario
+    if (rec) {
+        localStorage.setItem("mia_remember_user", user);
+        localStorage.setItem("mia_remember_id", id);
+    } else {
+        localStorage.removeItem("mia_remember_user");
+        localStorage.removeItem("mia_remember_id");
+    }
+
+    const btn = document.getElementById("btnSubmit");
+    const txt = document.getElementById("btnLoginText");
+    btn.disabled = true;
+    txt.textContent = "Autenticando...";
+    err.style.display = "none";
+
+    try {
+        // Ejecutar login via comando al backend
+        const res = await fetch(`${API}/ejecutar`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ codigo: `login -user=${user} -pass=${pass} -id=${id}` })
+        });
+
+        if (!res.ok) throw new Error("Sin conexión con el servidor");
+
+        const data = await res.json();
+        const salida = (data.salida || "").toLowerCase();
+
+        if (salida.includes("exitoso") || salida.includes("login exitoso")) {
+            // Guardar sesión en localStorage para el frontend
+            localStorage.setItem("mia_session", JSON.stringify({ user, id, active: true }));
+            window.location.href = "visualizador.html";
+        } else {
+            // Extraer mensaje de error del backend
+            const lines = (data.salida || "").split("\n");
+            const errLine = lines.find(l => l.toLowerCase().startsWith("error")) || "Usuario o contraseña incorrectos";
+            showError(errLine);
+        }
+    } catch(e) {
+        showError("No se pudo conectar con el servidor. Verifica que esté corriendo en puerto 8080.");
+    } finally {
+        btn.disabled = false;
+        txt.textContent = "Iniciar Sesión";
+    }
+}
+
+function showError(msg) {
+    const err = document.getElementById("loginError");
+    err.textContent = msg;
+    err.style.display = "block";
+    // Shake animation
+    err.classList.remove("shake");
+    void err.offsetWidth;
+    err.classList.add("shake");
+}
+
+</script>
+</body>
+</html>

@@ -17,13 +17,36 @@
 
 namespace CommandMkfile {
 
+// ===================== HELPERS =====================
+
 inline std::string toLowerCase(std::string str) {
     std::transform(str.begin(), str.end(), str.begin(), ::tolower);
     return str;
 }
 
+// Leer contenido de archivo DESDE EL FS (no desde el SO)
+inline std::string readFileContent(std::fstream& file, Superblock& sb, int inodeIndex) {
+    Inode inode = CommandMkdir::readInode(file, sb, inodeIndex);
+    std::string content;
+
+    for (int i = 0; i < 12; i++) {
+        if (inode.i_block[i] == -1) continue;
+
+        FileBlock fb;
+        file.seekg(sb.s_block_start + inode.i_block[i] * sizeof(FileBlock));
+        file.read((char*)&fb, sizeof(FileBlock));
+
+        content.append(fb.b_content, 64);
+    }
+
+    return content.substr(0, inode.i_size);
+}
+
+// ===================== ESCRIBIR CONTENIDO =====================
+
 inline bool writeFileContent(std::fstream& file, Superblock& sb,
                               Inode& inode, const std::string& data) {
+
     int totalChars = (int)data.size();
     int written = 0;
     int blockNum = 0;
@@ -33,9 +56,8 @@ inline bool writeFileContent(std::fstream& file, Superblock& sb,
         int freeBlock = CommandMkdir::findFreeBlock(file, sb);
         if (freeBlock == -1) return false;
 
-        FileBlock fb;
+        FileBlock fb{};
         int chunkSize = std::min(64, totalChars - written);
-        memset(fb.b_content, 0, 64);
         memcpy(fb.b_content, data.c_str() + written, chunkSize);
 
         file.seekp(sb.s_block_start + freeBlock * sizeof(FileBlock));
@@ -46,15 +68,20 @@ inline bool writeFileContent(std::fstream& file, Superblock& sb,
         file.write(&used, 1);
         sb.s_free_blocks_count--;
 
+        // Directos
         if (blockNum < 12) {
             inode.i_block[blockNum] = freeBlock;
 
+        // Indirecto simple
         } else if (blockNum < 12 + 16) {
+
             if (inode.i_block[12] == -1) {
                 int ptrBlock = CommandMkdir::findFreeBlock(file, sb);
                 if (ptrBlock == -1) return false;
 
-                PointerBlock pb;
+                PointerBlock pb{};
+                for (int i = 0; i < 16; i++) pb.b_pointers[i] = -1;
+
                 file.seekp(sb.s_block_start + ptrBlock * sizeof(PointerBlock));
                 file.write((char*)&pb, sizeof(PointerBlock));
 
@@ -75,12 +102,16 @@ inline bool writeFileContent(std::fstream& file, Superblock& sb,
             file.seekp(sb.s_block_start + inode.i_block[12] * sizeof(PointerBlock));
             file.write((char*)&pb, sizeof(PointerBlock));
 
+        // Indirecto doble
         } else if (blockNum < 12 + 16 + 16 * 16) {
+
             if (inode.i_block[13] == -1) {
                 int ptrBlock = CommandMkdir::findFreeBlock(file, sb);
                 if (ptrBlock == -1) return false;
 
-                PointerBlock pb;
+                PointerBlock pb{};
+                for (int i = 0; i < 16; i++) pb.b_pointers[i] = -1;
+
                 file.seekp(sb.s_block_start + ptrBlock * sizeof(PointerBlock));
                 file.write((char*)&pb, sizeof(PointerBlock));
 
@@ -104,7 +135,9 @@ inline bool writeFileContent(std::fstream& file, Superblock& sb,
                 int innerBlock = CommandMkdir::findFreeBlock(file, sb);
                 if (innerBlock == -1) return false;
 
-                PointerBlock innerPb;
+                PointerBlock innerPb{};
+                for (int i = 0; i < 16; i++) innerPb.b_pointers[i] = -1;
+
                 file.seekp(sb.s_block_start + innerBlock * sizeof(PointerBlock));
                 file.write((char*)&innerPb, sizeof(PointerBlock));
 
@@ -114,6 +147,7 @@ inline bool writeFileContent(std::fstream& file, Superblock& sb,
                 sb.s_free_blocks_count--;
 
                 outerPb.b_pointers[outerIdx] = innerBlock;
+
                 file.seekp(sb.s_block_start + inode.i_block[13] * sizeof(PointerBlock));
                 file.write((char*)&outerPb, sizeof(PointerBlock));
             }
@@ -138,12 +172,15 @@ inline bool writeFileContent(std::fstream& file, Superblock& sb,
     return true;
 }
 
+// ===================== EJECUCIÓN =====================
+
 inline std::string execute(
     const std::string& path,
     int size,
     const std::string& cont,
     bool recursive
 ) {
+
     if (!currentSession.active)
         return "Error: no hay sesion activa";
 
@@ -162,7 +199,7 @@ inline std::string execute(
     file.seekg(partition.start);
     file.read((char*)&sb, sizeof(Superblock));
 
-    // Navegar/crear directorio padre
+    // Navegar directorios
     std::vector<std::string> parts = CommandMkdir::splitPath(path);
     if (parts.empty()) {
         file.close();
@@ -174,17 +211,21 @@ inline std::string execute(
 
     for (int i = 0; i < (int)parts.size() - 1; i++) {
         int found = CommandMkdir::findInDir(file, sb, parentInodeIndex, parts[i]);
+
         if (found == -1) {
             if (!recursive) {
                 file.close();
                 return "Error: directorio '" + parts[i] +
                        "' no existe. Use -r para crearlo automaticamente";
             }
+
             found = CommandMkdir::createDirectory(file, sb, parts[i], parentInodeIndex);
+
             if (found == -1) {
                 file.close();
                 return "Error: no se pudo crear directorio '" + parts[i] + "'";
             }
+
         } else {
             Inode inode = CommandMkdir::readInode(file, sb, found);
             if (inode.i_type != '1') {
@@ -192,51 +233,61 @@ inline std::string execute(
                 return "Error: '" + parts[i] + "' no es un directorio";
             }
         }
+
         parentInodeIndex = found;
     }
 
+    // Verificar si ya existe
     if (CommandMkdir::findInDir(file, sb, parentInodeIndex, fileName) != -1) {
         file.close();
         return "Error: el archivo '" + fileName + "' ya existe";
     }
 
-    // ── Preparar contenido ────────────────────────────────────────────────────
+    // ===================== CONTENIDO =====================
+
     std::string data;
 
     if (!cont.empty()) {
-        std::ifstream hostFile(cont);
-        if (hostFile.is_open()) {
-            // Leer contenido del archivo del host
-            data.assign(
-                std::istreambuf_iterator<char>(hostFile),
-                std::istreambuf_iterator<char>()
-            );
-            hostFile.close();
-        } else {
-            // No guardar la ruta como contenido — retornar error
-            file.close();
-            return "Error: no se pudo abrir el archivo -cont='" + cont + "'";
+        std::vector<std::string> contParts = CommandMkdir::splitPath(cont);
+        int current = 0;
+
+        for (const auto& part : contParts) {
+            int found = CommandMkdir::findInDir(file, sb, current, part);
+            if (found == -1) {
+                file.close();
+                return "Error: archivo -cont='" + cont + "' no existe";
+            }
+            current = found;
         }
+
+        Inode contInode = CommandMkdir::readInode(file, sb, current);
+        if (contInode.i_type != '0') {
+            file.close();
+            return "Error: -cont no es un archivo";
+        }
+
+        data = readFileContent(file, sb, current);
+
     } else if (size > 0) {
-        // Secuencia 0-9 repetida
-        data.clear();
         for (int i = 0; i < size; i++) {
             data += char('0' + (i % 10));
         }
     }
-    // size == 0 y cont vacío → archivo vacío
 
-    // Crear inodo
+    // ===================== CREAR INODO =====================
+
     int newInodeIndex = CommandMkdir::findFreeInode(file, sb);
     if (newInodeIndex == -1) {
         file.close();
         return "Error: no hay inodos libres";
     }
 
-    Inode newInode;
-    newInode.i_uid  = 1;
-    newInode.i_gid  = 1;
-    newInode.i_size = (int)data.size();
+    Inode newInode{};
+    for (int i = 0; i < 15; i++) newInode.i_block[i] = -1;
+
+    newInode.i_uid = 1;
+    newInode.i_gid = 1;
+    newInode.i_size = data.size();
     newInode.i_type = '0';
     strncpy(newInode.i_perm, "664", 3);
 
@@ -248,7 +299,7 @@ inline std::string execute(
     if (!data.empty()) {
         if (!writeFileContent(file, sb, newInode, data)) {
             file.close();
-            return "Error: no hay bloques suficientes para el archivo";
+            return "Error: no hay bloques suficientes";
         }
     }
 
@@ -256,7 +307,7 @@ inline std::string execute(
 
     if (!CommandMkdir::addEntryToDir(file, sb, parentInodeIndex, fileName, newInodeIndex)) {
         file.close();
-        return "Error: no hay espacio en el directorio padre";
+        return "Error: no hay espacio en el directorio";
     }
 
     file.seekp(partition.start);
@@ -270,45 +321,47 @@ inline std::string execute(
     result << "Path:   " << path << "\n";
     result << "Inodo:  " << newInodeIndex << "\n";
     result << "Tamano: " << data.size() << " bytes\n";
+
     return result.str();
 }
 
+// ===================== PARSER =====================
+
 inline std::string executeFromLine(const std::string& commandLine) {
+
     std::string path;
     std::string cont;
     int size = 0;
     bool recursive = false;
 
-    // Extraer -path= con soporte para comillas y espacios
     size_t pathPos = commandLine.find("-path=");
     if (pathPos != std::string::npos) {
         size_t valStart = pathPos + 6;
-        if (valStart < commandLine.size() && commandLine[valStart] == '"') {
-            size_t closeQuote = commandLine.find('"', valStart + 1);
-            if (closeQuote != std::string::npos)
-                path = commandLine.substr(valStart + 1, closeQuote - valStart - 1);
+
+        if (commandLine[valStart] == '"') {
+            size_t end = commandLine.find('"', valStart + 1);
+            path = commandLine.substr(valStart + 1, end - valStart - 1);
         } else {
-            size_t valEnd = commandLine.find(' ', valStart);
-            if (valEnd == std::string::npos) valEnd = commandLine.size();
-            path = commandLine.substr(valStart, valEnd - valStart);
+            size_t end = commandLine.find(' ', valStart);
+            if (end == std::string::npos) end = commandLine.size();
+            path = commandLine.substr(valStart, end - valStart);
         }
     }
 
-    // Parsear resto de parámetros con istringstream
-    std::istringstream iss(commandLine);
+    std::stringstream ss(commandLine);
     std::string token;
-    iss >> token; // saltar "mkfile"
 
-    while (iss >> token) {
+    while (ss >> token) {
         std::string lower = toLowerCase(token);
 
         if (lower.find("-size=") == 0) {
             size = std::stoi(token.substr(6));
-            if (size < 0)
-                return "Error: -size no puede ser negativo";
-        } else if (lower.find("-cont=") == 0) {
+            if (size < 0) return "Error: -size no puede ser negativo";
+        }
+        else if (lower.find("-cont=") == 0) {
             cont = token.substr(6);
-        } else if (lower == "-r") {
+        }
+        else if (lower == "-r") {
             recursive = true;
         }
     }
@@ -319,6 +372,6 @@ inline std::string executeFromLine(const std::string& commandLine) {
     return execute(path, size, cont, recursive);
 }
 
-}  // namespace CommandMkfile
+} // namespace CommandMkfile
 
 #endif

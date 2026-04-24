@@ -1,0 +1,42 @@
+ERRORES DETECTADOS EN LA EJECUCIÓN DEL SISTEMA GODISK
+
+1.  LOGIN NO VALIDA CREDENCIALES El sistema permite iniciar sesión con
+    contraseña incorrecta. Ejemplo: se utilizó -pass=123 cuando debería
+    ser 563.
+
+2.  COPY NO CREA ARCHIVOS DESTINO El comando copy falla si el archivo
+    destino no existe. Debería crear el archivo automáticamente.
+
+3.  CHOWN USA PARÁMETRO INCORRECTO El sistema solicita -usuario, pero en
+    la entrada se usa -user. Esto genera error aunque el comando esté
+    bien conceptualmente.
+
+4.  MKDIR NO RESPETA COMPORTAMIENTO SIN -p Se crean directorios aunque
+    no existan carpetas padre sin usar -p. Debería marcar error en esos
+    casos.
+
+5.  CAT NO MUESTRA CONTENIDO Archivos creados con -contenido no muestran
+    datos al usar cat. Indica que no se está copiando realmente el
+    contenido.
+
+6.  RENAME INCONSISTENTE Archivos previamente creados no son encontrados
+    al intentar renombrar. Posible error en búsqueda de inodos o
+    estructura interna.
+
+7.  COMANDO EDIT NO IMPLEMENTADO El comando aparece en la entrada pero
+    el sistema no lo reconoce.
+
+8.  COMANDO RECOVERY NO IMPLEMENTADO El comando aparece en la entrada
+    pero no existe en el sistema.
+
+9.  FIND NO LISTA TODOS LOS RESULTADOS La búsqueda no devuelve todos los
+    archivos esperados. Posible error en recorrido del árbol de
+    directorios.
+
+10. VALIDACIÓN DE GRUPOS RESTRICTIVA Nombres mayores a 10 caracteres son
+    rechazados. Esto afecta comandos definidos en la entrada como
+    ‘desarrolladores’.
+
+CONCLUSIÓN: El flujo general del sistema funciona correctamente, pero
+existen fallas en validaciones, consistencia de comandos y manejo del
+sistema de archivos.

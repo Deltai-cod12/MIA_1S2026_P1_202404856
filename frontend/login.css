@@ -1,0 +1,233 @@
+/* ── LOGIN.CSS - Tema Catppuccin Mocha para C++Disk 2.0 ──────────────── */
+
+:root {
+    --bg:         #1e1e2e;
+    --panel:      #181825;
+    --input:      #11111b;
+    --border:     #313244;
+    --accent:     #89b4fa;
+    --green:      #a6e3a1;
+    --red:        #f38ba8;
+    --yellow:     #f9e2af;
+    --comment:    #6c7086;
+    --text:       #cdd6f4;
+    --subtext:    #a6adc8;
+    --font-mono:  'Courier New', monospace;
+}
+
+/* ── Base y Fondo ── */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+.login-body {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, sans-serif;
+    overflow: hidden;
+    position: relative;
+}
+
+/* El fondo con efecto de cuadrícula (grid) */
+.login-bg {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 1;
+    background: radial-gradient(circle at center, #242437 0%, #1e1e2e 100%);
+}
+
+.login-grid {
+    width: 100%; height: 100%;
+    background-image: 
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 50px 50px;
+    opacity: 0.15;
+}
+
+/* ── Wrapper y Brand ── */
+.login-wrapper {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 420px;
+    padding: 20px;
+}
+
+.login-brand {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 30px;
+    justify-content: center;
+}
+
+.brand-icon-big {
+    font-size: 48px;
+    color: var(--accent);
+    text-shadow: 0 0 20px rgba(137, 180, 250, 0.4);
+}
+
+.login-title {
+    font-family: var(--font-mono);
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--text);
+}
+
+.login-subtitle {
+    color: var(--comment);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* ── Card de Login ── */
+.login-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.login-card-header {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 24px;
+    color: var(--accent);
+    text-align: center;
+}
+
+/* ── Formularios ── */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    font-size: 12px;
+    color: var(--subtext);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.form-input {
+    width: 100%;
+    background: var(--input);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-size: 15px;
+    transition: 0.2s;
+    outline: none;
+}
+
+.form-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(137, 180, 250, 0.15);
+}
+
+/* Password wrapper con ojo */
+.input-pass-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.btn-eye {
+    position: absolute;
+    right: 12px;
+    background: transparent;
+    border: none;
+    color: var(--comment);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px;
+}
+
+.btn-eye:hover { color: var(--text); }
+
+/* Checkbox */
+.form-check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--subtext);
+    margin-bottom: 24px;
+    cursor: pointer;
+}
+
+.form-check input {
+    accent-color: var(--accent);
+    width: 16px; height: 16px;
+}
+
+/* ── Botón ── */
+.btn-login {
+    width: 100%;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-login:hover:not(:disabled) {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(137, 180, 250, 0.3);
+}
+
+.btn-login:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ── Error y Animaciones ── */
+.login-error {
+    background: rgba(243, 139, 168, 0.1);
+    border: 1px solid var(--red);
+    color: var(--red);
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.shake {
+    animation: shake 0.4s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    50% { transform: translateX(8px); }
+    75% { transform: translateX(-4px); }
+}
+
+.login-back {
+    margin-top: 24px;
+    text-align: center;
+}
+
+.login-back a {
+    color: var(--comment);
+    text-decoration: none;
+    font-size: 13px;
+    transition: 0.2s;
+}
+
+.login-back a:hover {
+    color: var(--accent);
+}
